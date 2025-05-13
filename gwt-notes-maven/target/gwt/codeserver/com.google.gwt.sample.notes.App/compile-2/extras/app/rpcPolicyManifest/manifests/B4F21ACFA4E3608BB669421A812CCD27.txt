@@ -1,0 +1,2 @@
+serviceClass: com.google.gwt.sample.notes.shared.StockPriceService
+path: 9B519663370FD45BD0AC9545483AA16A.gwt.rpc

@@ -1,0 +1,5 @@
+com/google/gwt/sample/notes/shared/FieldVerifier.class
+com/google/gwt/sample/notes/shared/DelistedException.class
+com/google/gwt/sample/notes/shared/StockPrice.class
+com/google/gwt/sample/notes/shared/StockPriceService.class
+com/google/gwt/sample/notes/shared/StockPriceServiceAsync.class

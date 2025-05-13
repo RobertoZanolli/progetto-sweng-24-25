@@ -1,0 +1,13 @@
+binding: user.agent=gecko1_8
+Compiling module com.google.gwt.sample.notes.App
+   Unification traversed 21135 fields and methods and 1985 types. 1954 are considered part of the current module and 1954 had all of their fields and methods traversed.
+   Compiling 1 permutation
+      Compiling permutation 0...
+      Linking per-type JS with 1933 new/changed types.
+      Source Maps Enabled
+   Compile of permutations succeeded
+   Compilation succeeded -- 2,101s
+Linking into /Users/robertozanolli/Projects/Uni/progetto-sweng-24-25/gwt-notes-maven/target/gwt/codeserver/com.google.gwt.sample.notes.App/compile-2/war/app; Writing extras to /Users/robertozanolli/Projects/Uni/progetto-sweng-24-25/gwt-notes-maven/target/gwt/codeserver/com.google.gwt.sample.notes.App/compile-2/extras/app
+   Link succeeded
+   Linking succeeded -- 0,200s
+2,328s total -- Compile completed
