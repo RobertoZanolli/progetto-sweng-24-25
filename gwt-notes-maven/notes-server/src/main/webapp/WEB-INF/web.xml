@@ -9,5 +9,13 @@
   <welcome-file-list>
     <welcome-file>notes.html</welcome-file>
   </welcome-file-list>
+  <servlet>
+    <servlet-name>RegisterServlet</servlet-name>
+    <servlet-class>com.google.gwt.sample.notes.server.RegisterServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+    <servlet-name>RegisterServlet</servlet-name>
+    <url-pattern>/api/register</url-pattern>
+</servlet-mapping>
 
 </web-app>

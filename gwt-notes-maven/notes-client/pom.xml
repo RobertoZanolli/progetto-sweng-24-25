@@ -39,8 +39,8 @@
         <groupId>net.ltgt.gwt.maven</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
         <configuration>
-          <moduleName>com.google.gwt.sample.notes.App</moduleName>
-          <moduleShortName>app</moduleShortName>
+          <moduleName>com.google.gwt.sample.notes.notes</moduleName>
+          <moduleShortName>notes</moduleShortName>
         </configuration>
       </plugin>
     </plugins>
