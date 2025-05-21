@@ -23,11 +23,12 @@ public class CreateNotePanel extends Composite {
     private VerticalPanel panel = new VerticalPanel();
     private TextBox titleBox = new TextBox();
     private TextArea contentBox = new TextArea();
-    private ListBox folderListBox = new ListBox();
     private ListBox tagListBox = new ListBox(true); // selezione multipla
     private Button saveButton = new Button("Salva nota");
     private Label charCountLabel = new Label("0 / 280");
     private final Label feedbackLabel = new Label();
+    private TextBox newTagBox = new TextBox();
+    private Button addTagButton = new Button("Aggiungi tag");
 
     public CreateNotePanel() {
         initWidget(panel);
@@ -47,17 +48,15 @@ public class CreateNotePanel extends Composite {
         panel.add(contentBox);
         panel.add(charCountLabel);
 
-        panel.add(new Label("Cartella:"));
-        folderListBox.addItem("Nessuna", "0"); // esempio
-        folderListBox.addItem("Lavoro", "1");
-        folderListBox.addItem("Personale", "2");
-        panel.add(folderListBox);
-
         panel.add(new Label("Tag (Ctrl+Click per selezione multipla):"));
         tagListBox.addItem("Urgente", "1");
         tagListBox.addItem("Idee", "2");
         tagListBox.addItem("Ricerca", "3");
         panel.add(tagListBox);
+
+        panel.add(new Label("Aggiungi nuovo tag:"));
+        panel.add(newTagBox);
+        panel.add(addTagButton);
 
         panel.add(feedbackLabel);
         panel.add(saveButton);
@@ -68,10 +67,32 @@ public class CreateNotePanel extends Composite {
             int length = contentBox.getText().length();
             if (length > 280) {
                 contentBox.setText(contentBox.getText().substring(0, 280));
-                length = 280;
             }
             charCountLabel.setText(length + " / 280");
         });
+
+        addTagButton.addClickHandler(event -> {
+            String newTag = newTagBox.getText().trim();
+            if (!newTag.isEmpty()) {
+                boolean exists = false;
+                for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                    if (tagListBox.getItemText(i).equalsIgnoreCase(newTag)) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    // Usiamo l'indice come valore, ma potresti usare un UUID o il testo stesso
+                    tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
+                    newTagBox.setText("");
+                } else {
+                    Window.alert("Tag già presente.");
+                }
+            } else {
+                Window.alert("Inserisci un nome per il tag.");
+            }
+        });
+
 
         saveButton.addClickHandler(event -> {
             String title = titleBox.getText().trim();
@@ -127,7 +148,6 @@ public class CreateNotePanel extends Composite {
     private void clearForm() {
         titleBox.setText("");
         contentBox.setText("");
-        folderListBox.setSelectedIndex(0);
         for (int i = 0; i < tagListBox.getItemCount(); i++) {
             tagListBox.setItemSelected(i, false);
         }

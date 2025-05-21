@@ -7,8 +7,8 @@ public class notes implements EntryPoint {
     @Override
     public void onModuleLoad() {
         // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single page app
-        RootPanel.get("mainPanel").add(new RegistrationPanel());
-        RootPanel.get("createNotePanel").add(new CreateNotePanel());
-        RootPanel.get("viewNotesPanel").add(new ViewNotesPanel());
+        RootPanel.get("mainPanel").add(new CreateNotePanel());
+/*         RootPanel.get("mainPanel").add(new RegistrationPanel());
+        RootPanel.get("viewNotesPanel").add(new ViewNotesPanel()); */
     }
 }
