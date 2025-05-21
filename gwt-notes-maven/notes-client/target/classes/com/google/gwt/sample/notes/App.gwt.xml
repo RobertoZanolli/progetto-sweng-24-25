@@ -1,7 +1,0 @@
-<module rename-to="app">
-  <inherits name="com.google.gwt.user.User"/>
-  <inherits name="com.google.gwt.user.theme.clean.Clean"/>
-  <source path=""/>
-  <entry-point class="com.google.gwt.sample.notes.client.StockWatcher"/>
-  <set-property name="user.agent" value="gecko1_8,safari"/>
-</module>

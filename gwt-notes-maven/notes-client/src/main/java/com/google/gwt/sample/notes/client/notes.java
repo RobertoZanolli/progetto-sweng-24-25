@@ -1,0 +1,12 @@
+package com.google.gwt.sample.notes.client;
+
+import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.user.client.ui.RootPanel;
+
+public class notes implements EntryPoint {
+    @Override
+    public void onModuleLoad() {
+        // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single page app
+        RootPanel.get("mainPanel").add(new RegistrationPanel());
+    }
+}
