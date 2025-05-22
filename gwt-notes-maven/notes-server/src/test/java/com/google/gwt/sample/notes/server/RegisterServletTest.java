@@ -490,7 +490,7 @@ public class RegisterServletTest {
     public void testRegisterNewUser() throws Exception {
         User user = new User();
         user.setEmail("testuser@test.it");
-        user.setPasswordHash("password123");
+        user.setPassword ("password123");
         String json = gson.toJson(user);
 
         StubHttpServletRequest req = new StubHttpServletRequest(json);
@@ -505,7 +505,7 @@ public class RegisterServletTest {
     public void testRegisterDuplicateUser() throws Exception {
         User user = new User();
         user.setEmail("dupeuser@test.it");
-        user.setPasswordHash("password123");
+        user.setPassword ("password123");
         String json = gson.toJson(user);
 
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
@@ -531,5 +531,80 @@ public class RegisterServletTest {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Test
+    public void testRegisterWithInvalidEmail() throws Exception {
+        User user = new User();
+        user.setEmail("invalidemail.com");
+        user.setPassword("password123");
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("invalid email"));
+    }
+
+    @Test
+    public void testRegisterWithNullEmail() throws Exception {
+        User user = new User();
+        user.setEmail(null);
+        user.setPassword("password123");
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("email required"));
+    }
+
+    @Test
+    public void testRegisterWithEmptyEmail() throws Exception {
+        User user = new User();
+        user.setEmail("");
+        user.setPassword("password123");
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("email required"));
+    }
+
+    @Test
+    public void testRegisterWithNullPassword() throws Exception {
+        User user = new User();
+        user.setEmail("test@domain.com");
+        user.setPassword(null);
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("password required"));
+    }
+
+    @Test
+    public void testRegisterWithEmptyPassword() throws Exception {
+        User user = new User();
+        user.setEmail("test@domain.com");
+        user.setPassword("");
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("password required"));
     }
 }
