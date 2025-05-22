@@ -4,7 +4,6 @@ import com.google.gwt.sample.notes.shared.User;
 import com.google.gson.Gson;
 
 import java.util.Date;
-import java.util.UUID;
 
 public class NoteFactory {
     private static final Gson gson = new Gson();
@@ -12,7 +11,6 @@ public class NoteFactory {
     // Factory method standard
     public static Note create(String title, String content, String[] tags, User owner) {
         Note note = new Note();
-        note.setId(UUID.randomUUID().toString());
         note.setTitle(title);
         note.setContent(content);
         note.setTags(tags);
@@ -26,11 +24,6 @@ public class NoteFactory {
     // Factory method da JSON
     public static Note fromJson(String json) {
         Note note = gson.fromJson(json, Note.class);
-
-        // Se manca l'ID lo genera
-        if (note.getId() == null || note.getId().isEmpty()) {
-            note.setId(UUID.randomUUID().toString());
-        }
 
         // Gestione date null
         Date now = new Date();

@@ -1,5 +1,6 @@
 package com.google.gwt.sample.notes.client;
 
+import com.google.gson.Gson;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.http.client.Request;
@@ -17,7 +18,12 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONParser;
+import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.json.client.JSONString;
+import java.util.ArrayList;
+import java.util.List;
 public class CreateNotePanel extends Composite {
 
     private VerticalPanel panel = new VerticalPanel();
@@ -29,6 +35,8 @@ public class CreateNotePanel extends Composite {
     private final Label feedbackLabel = new Label();
     private TextBox newTagBox = new TextBox();
     private Button addTagButton = new Button("Aggiungi tag");
+    private final String tagLogName = "Tag";
+    private final String noteLogName = "Note";
 
     public CreateNotePanel() {
         initWidget(panel);
@@ -49,9 +57,8 @@ public class CreateNotePanel extends Composite {
         panel.add(charCountLabel);
 
         panel.add(new Label("Tag (Ctrl+Click per selezione multipla):"));
-        tagListBox.addItem("Urgente", "1");
-        tagListBox.addItem("Idee", "2");
-        tagListBox.addItem("Ricerca", "3");
+
+        getTag();
         panel.add(tagListBox);
 
         panel.add(new Label("Aggiungi nuovo tag:"));
@@ -74,25 +81,39 @@ public class CreateNotePanel extends Composite {
         addTagButton.addClickHandler(event -> {
             String newTag = newTagBox.getText().trim();
             if (!newTag.isEmpty()) {
-                boolean exists = false;
-                for (int i = 0; i < tagListBox.getItemCount(); i++) {
-                    if (tagListBox.getItemText(i).equalsIgnoreCase(newTag)) {
-                        exists = true;
-                        break;
-                    }
-                }
-                if (!exists) {
-                    // Usiamo l'indice come valore, ma potresti usare un UUID o il testo stesso
-                    tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
-                    newTagBox.setText("");
-                } else {
-                    Window.alert("Tag già presente.");
+                JSONObject payload = new JSONObject();
+                payload.put("name", new JSONString(newTag));
+
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                        GWT.getHostPageBaseURL() + "createTag");
+                builder.setHeader("Content-Type", "application/json");
+                try {
+                    builder.sendRequest(payload.toString(), new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText(tagLogName + " created!");
+                                updateTagList(false, newTag);
+                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
+                                feedbackLabel.setText(tagLogName + " already exists.");
+                                updateTagList(true, newTag);
+                            } else {
+                                feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
+                            }
+                        }
+
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Error: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Request error: " + e.getMessage());
                 }
             } else {
                 Window.alert("Inserisci un nome per il tag.");
             }
         });
-
 
         saveButton.addClickHandler(event -> {
             String title = titleBox.getText().trim();
@@ -115,7 +136,6 @@ public class CreateNotePanel extends Composite {
             payload.put("content", new JSONString(content));
             payload.put("tags", tagsArray);
 
-
             // Regaz ricordatevi di sistemare sempre le entry point
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "createNote");
             builder.setHeader("Content-Type", "application/json");
@@ -124,11 +144,11 @@ public class CreateNotePanel extends Composite {
                     @Override
                     public void onResponseReceived(Request request, Response response) {
                         if (response.getStatusCode() == Response.SC_OK) {
-                            feedbackLabel.setText("Registration successful!");
+                            feedbackLabel.setText(noteLogName + " Created!");
                         } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                            feedbackLabel.setText("User already exists.");
+                            feedbackLabel.setText(noteLogName + " already exists.");
                         } else {
-                            feedbackLabel.setText("Registration failed: " + response.getText());
+                            feedbackLabel.setText(noteLogName + " Creation failed: " + response.getText());
                         }
 
                         clearForm();
@@ -153,4 +173,62 @@ public class CreateNotePanel extends Composite {
         }
         charCountLabel.setText("0 / 280");
     }
+
+    private void updateTagList(Boolean exists, String newTag) {
+        if (!exists) {
+            // Usiamo l'indice come valore, ma potresti usare un UUID o il testo stesso
+            tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
+            newTagBox.setText("");
+        } else {
+            feedbackLabel.setText("Tag già presente.");
+        }
+    }
+
+    private void getTag() {
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
+                GWT.getHostPageBaseURL() + "createTag");
+        builder.setHeader("Content-Type", "application/json");
+        try {
+            builder.setCallback(new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        List<String> tags = parseJsonArray(json);
+                        
+                        for (String tag : tags) {
+                            tagListBox.addItem(tag);
+                        }
+                    } else {
+                        feedbackLabel.setText("Error fetching "+tagLogName+": " + response.getText());
+                    }
+                }
+                
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Error: " + exception.getMessage());
+                }
+            });
+            builder.send();
+        } catch (RequestException e) {
+            feedbackLabel.setText("Request error: " + e.getMessage());
+        }
+    }
+    
+    public List<String> parseJsonArray(String jsonString) {
+        List<String> result = new ArrayList<>();
+        JSONValue value = JSONParser.parseStrict(jsonString);
+        JSONArray array = value.isArray();
+        if (array != null) {
+            for (int i = 0; i < array.size(); i++) {
+                JSONValue v = array.get(i);
+                JSONString s = v.isString();
+                if (s != null) {
+                    result.add(s.stringValue());
+                }
+            }
+        }
+        return result;
+    }
 }
+

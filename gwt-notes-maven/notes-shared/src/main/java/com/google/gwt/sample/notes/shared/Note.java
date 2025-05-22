@@ -1,9 +1,10 @@
 package com.google.gwt.sample.notes.shared;
 
 import java.util.Date;
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class Note {
+public class Note implements Serializable{
     private String id;
     private String title;
     private String content;
@@ -13,12 +14,13 @@ public class Note {
     private User owner;
 
     public Note() {
-        // Necessario per Gson
+        NoteIdGenerator generator = new NoteIdGenerator(1);
+        long id = generator.nextId();
+        this.id = Long.toString(id); 
     }
 
     // Getters e Setters (obbligatori per Gson + POJO style)
     public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

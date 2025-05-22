@@ -1,11 +1,14 @@
 package com.google.gwt.sample.notes.shared;
+
+import java.io.Serializable;
+
 /*Classe User:
  * - email
  * - passwordHash
  * Non vogliamo che gli utenti vedano la password, quindi non vogliamo 
  * che venga salvata in chiaro nel database. -> teniamo solo hash
  */
-public class User {
+public class User implements Serializable {
     private String email;
     private String passwordHash;
 
