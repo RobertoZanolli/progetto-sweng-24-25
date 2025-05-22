@@ -71,12 +71,22 @@ public class RegisterServlet extends HttpServlet {
             resp.getWriter().write("email required");
             return;
         }
+        if (!user.getEmail().contains("@")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("invalid email");
+            return;
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("password required");
+            return;
+        }
         if (users.containsKey(user.getEmail())) {
             resp.setStatus(HttpServletResponse.SC_CONFLICT);
             resp.getWriter().write("User already exists");
             return;
         }
-        String hash = hashPassword(user.getPasswordHash());
+        String hash = hashPassword(user.getPassword());
         users.put(user.getEmail(), hash);
         db.commit();
         resp.setStatus(HttpServletResponse.SC_OK);

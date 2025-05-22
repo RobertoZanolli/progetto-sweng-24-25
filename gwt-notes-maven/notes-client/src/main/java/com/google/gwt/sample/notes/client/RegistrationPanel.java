@@ -33,18 +33,24 @@ public class RegistrationPanel extends VerticalPanel {
     }
 
     private void doRegister() {
-        String username = emailBox.getText().trim();
+
+        String email = emailBox.getText().trim();
         String password = passwordBox.getText();
-        if (username.isEmpty() || password.isEmpty()) {
+
+        if (email.isEmpty() || password.isEmpty()) {
             feedbackLabel.setText("Email and password required.");
+            return;
+        }
+        else if (!email.contains("@")) {
+            feedbackLabel.setText("Email must contain '@' symbol.");
             return;
         }
         registerButton.setEnabled(false);
         feedbackLabel.setText("Registering...");
 
         JSONObject payload = new JSONObject();
-        payload.put("email", new JSONString(username));
-        payload.put("passwordHash", new JSONString(password));
+        payload.put("email", new JSONString(email));
+        payload.put("password", new JSONString(password));
 
         //Regaz ricordatevi di sistemare sempre le entry point
         RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/register");
