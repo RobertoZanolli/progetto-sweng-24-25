@@ -4,33 +4,32 @@ import java.io.Serializable;
 
 /*Classe User:
  * - email
- * - passwordHash
- * Non vogliamo che gli utenti vedano la password, quindi non vogliamo 
- * che venga salvata in chiaro nel database. -> teniamo solo hash
+ * - password 
+ *  L'utente ha mail e password,  
  */
 public class User implements Serializable {
     private String email;
-    private String passwordHash;
+    private String password ;
 
     public User() {}
 
-    public User(String email, String passwordHash) {
+    public User(String email, String password ) {
         this.email = email;
-        this.passwordHash = passwordHash;
+        this.password  = password ;
     }
 
     public String getEmail() {
         return email;
     }
-    public String getPasswordHash() {
-        return passwordHash;
+    public String getPassword () {
+        return password ;
     }
 
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
+    public void setPassword (String password ) {
+        this.password  = password ;
     }
 }
