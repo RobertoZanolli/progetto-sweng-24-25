@@ -35,34 +35,27 @@ import static org.junit.Assert.*;
 public class CreateTagServletTest {
     private CreateTagServlet servlet;
     private Gson gson = new Gson();
-    private File tempDbFile;
-    private final String tableName = "tags";
+    private final String tableName = "tagsTest";
     private final String logName = "Tag";
 
-    @Before
+    // before but not for evrey test
     public void setUp() throws IOException {
-        if (tempDbFile != null && tempDbFile.exists()) {
-            if (!tempDbFile.delete()) {
-                throw new IOException("Could not delete old temp DB file: " + tempDbFile.getAbsolutePath());
-            }
-        }
-        tempDbFile = File.createTempFile(tableName+"-test", ".db");
-        if (tempDbFile.exists() && !tempDbFile.delete()) {
-            throw new IOException("Could not delete just-created temp DB file: " + tempDbFile.getAbsolutePath());
+        // Create a temporary file for the database
+        File tempFile = File.createTempFile(tableName, ".db");
+        
+        if (tempFile.exists()) {
+            tempFile.delete(); // oppure usa Files.deleteIfExists(path)
         }
 
-        tempDbFile = new File(tempDbFile.getAbsolutePath());
-        servlet = new CreateTagServlet(tempDbFile.getAbsolutePath());
+        servlet = new CreateTagServlet(tempFile);
         servlet.init();
-        assertNotNull(logName+" map should be initialized", getTagsMap(servlet));
+        TagDB tagDB = TagDB.getInstance(tempFile);
+        assertNotNull(logName + " DB should be initialized", tagDB);
     }
 
     @After
     public void tearDown() {
         servlet.destroy();
-        if (tempDbFile != null && tempDbFile.exists()) {
-            tempDbFile.delete();
-        }
     }
 
     private static class StubHttpServletRequest implements javax.servlet.http.HttpServletRequest {
@@ -682,6 +675,8 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateNewTag() throws Exception {
+        setUp();
+
         Tag tag = gson.fromJson(inputJson, Tag.class);
         String json = gson.toJson(tag);
 
@@ -700,7 +695,20 @@ public class CreateTagServletTest {
     @Test
 
     public void testCreateDuplicateTag() throws Exception {
+        // Create a file for the database
+        File tempFile = new File(tableName+ ".db");
+        
+        if (tempFile.exists()) {
+            tempFile.delete(); // oppure usa Files.deleteIfExists(path)
+        }
+
+        servlet = new CreateTagServlet(tempFile);
+        servlet.init();
+        TagDB tagDB = TagDB.getInstance(tempFile);
+        assertNotNull(logName + " DB should be initialized", tagDB);
+
         Tag tag = gson.fromJson(inputJson, Tag.class);
+        tag.setName(new Note().getId());
         String json = gson.toJson(tag);
 
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
@@ -708,6 +716,12 @@ public class CreateTagServletTest {
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
         assertTrue(resp1.getOutput().contains(logName + " created"));
+
+                servlet = new CreateTagServlet(tempFile);
+        servlet.init();
+        tagDB = TagDB.getInstance(tempFile);
+        assertNotNull(logName + " DB should be initialized", tagDB);
+
 
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
@@ -718,6 +732,8 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateTagWithInvalidJson() throws Exception {
+        setUp();
+
         StubHttpServletResponse resp = new StubHttpServletResponse();
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
 
@@ -731,10 +747,12 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateTagWithInvalidName() throws Exception {
+        setUp();
+
         Tag tag1 = new Tag();
         Tag tag2 = new Tag("");
 
-        for (Tag tag : new Tag[]{tag1, tag2}) {
+        for (Tag tag : new Tag[] { tag1, tag2 }) {
             String json = gson.toJson(tag);
 
             StubHttpServletRequest req = new StubHttpServletRequest(json);
@@ -743,18 +761,6 @@ public class CreateTagServletTest {
             servlet.doPost(req, resp);
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
             assertTrue(resp.getOutput().contains("Name required"));
-        }
-    }
-
-    // Helper to access private field for assertion
-    private Object getTagsMap(CreateTagServlet servlet) {
-        final String fieldName = "tagMap";
-        try {
-            java.lang.reflect.Field notesField = CreateTagServlet.class.getDeclaredField(fieldName);
-            notesField.setAccessible(true);
-            return notesField.get(servlet);
-        } catch (Exception e) {
-            return null;
         }
     }
 }

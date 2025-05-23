@@ -22,8 +22,11 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.json.client.JSONString;
+
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.List;
+
 public class CreateNotePanel extends Composite {
 
     private VerticalPanel panel = new VerticalPanel();
@@ -120,9 +123,14 @@ public class CreateNotePanel extends Composite {
             String content = contentBox.getText().trim();
 
             JSONArray tagsArray = new JSONArray();
+            int tagIndex = 0; // usato per tenere traccia dell'indice compatto dell'array
+
             for (int i = 0; i < tagListBox.getItemCount(); i++) {
                 if (tagListBox.isItemSelected(i)) {
-                    tagsArray.set(i, new JSONString(tagListBox.getValue(i)));
+                    String tagValue = tagListBox.getValue(i);
+                    if (tagValue != null && !tagValue.trim().isEmpty()) {
+                        tagsArray.set(tagIndex++, new JSONString(tagValue.trim()));
+                    }
                 }
             }
 
@@ -136,7 +144,6 @@ public class CreateNotePanel extends Composite {
             payload.put("content", new JSONString(content));
             payload.put("tags", tagsArray);
 
-            // Regaz ricordatevi di sistemare sempre le entry point
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "createNote");
             builder.setHeader("Content-Type", "application/json");
             try {
@@ -195,15 +202,15 @@ public class CreateNotePanel extends Composite {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
                         List<String> tags = parseJsonArray(json);
-                        
+
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
                         }
                     } else {
-                        feedbackLabel.setText("Error fetching "+tagLogName+": " + response.getText());
+                        feedbackLabel.setText("Error fetching " + tagLogName + ": " + response.getText());
                     }
                 }
-                
+
                 @Override
                 public void onError(Request request, Throwable exception) {
                     feedbackLabel.setText("Error: " + exception.getMessage());
@@ -214,7 +221,7 @@ public class CreateNotePanel extends Composite {
             feedbackLabel.setText("Request error: " + e.getMessage());
         }
     }
-    
+
     public List<String> parseJsonArray(String jsonString) {
         List<String> result = new ArrayList<>();
         JSONValue value = JSONParser.parseStrict(jsonString);
@@ -231,4 +238,3 @@ public class CreateNotePanel extends Composite {
         return result;
     }
 }
-

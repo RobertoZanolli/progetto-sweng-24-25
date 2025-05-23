@@ -37,18 +37,31 @@ public class CreateNoteServletTest {
     private Gson gson = new Gson();
     private File tempDbFileNote;
     private File tempDbFileTag;
-    private final String tableName = "notes";
-    private final String logName = "Note";
+    private final String noteTableName = "notesTest";
+    private final String noteLogName = "Note";
+    private final String tagTableName = "tagsTest";
+    private final String tagLogName = "Tag";
 
-    @Before
+    // before but not for evrey test
     public void setUp() throws IOException {
-        tempDbFileNote = createTempFile(tempDbFileNote);
-        tempDbFileTag = createTempFile(tempDbFileTag);
+        // Create a temporary file for the database
+        tempDbFileNote = File.createTempFile(noteTableName, ".db");
+        if (tempDbFileNote.exists()) {
+            tempDbFileNote.delete(); // oppure usa Files.deleteIfExists(path)
+        }
+        tempDbFileTag = File.createTempFile(tagTableName, ".db");
+        if (tempDbFileTag.exists()) {
+            tempDbFileTag.delete(); // oppure usa Files.deleteIfExists(path)
+        }
 
-        servlet = new CreateNoteServlet(tempDbFileNote.getAbsolutePath(), tempDbFileTag.getAbsolutePath());
+        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
         servlet.init();
-        assertNotNull(logName + " map should be initialized", getNoteMap(servlet));
-        assertNotNull(logName + " map should be initialized", getTagMap(servlet));
+
+        TagDB tagDB = TagDB.getInstance(tempDbFileTag);
+        NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
+
+        assertNotNull(noteLogName + " map should be initialized", noteDB);
+        assertNotNull(tagLogName + " map should be initialized", tagDB);
     }
 
     @After
@@ -676,6 +689,8 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNewNote() throws Exception {
+        setUp();
+
         /*
          * String inputJson = "{\r\n" + //
          * "  \"title\": \"Esempio di nota\",\r\n" + //
@@ -697,7 +712,7 @@ public class CreateNoteServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains(logName + " created"));
+        assertTrue(resp.getOutput().contains(noteLogName + " created"));
     }
 
     String inputJson = "{\r\n" + //
@@ -714,6 +729,25 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateDuplicateNote() throws Exception {
+        // Create a file for the database
+        tempDbFileNote = new File(noteTableName + ".db");
+        if (tempDbFileNote.exists()) {
+            tempDbFileNote.delete(); // oppure usa Files.deleteIfExists(path)
+        }
+        tempDbFileTag = new File(tagTableName + ".db");
+        if (tempDbFileTag.exists()) {
+            tempDbFileTag.delete(); // oppure usa Files.deleteIfExists(path)
+        }
+
+        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
+        servlet.init();
+
+        TagDB tagDB = TagDB.getInstance(tempDbFileTag);
+        NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
+
+        assertNotNull(noteLogName + " map should be initialized", noteDB);
+        assertNotNull(tagLogName + " map should be initialized", tagDB);
+
         Note user = NoteFactory.fromJson(inputJson);
         String json = gson.toJson(user);
 
@@ -721,17 +755,32 @@ public class CreateNoteServletTest {
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
-        assertTrue(resp1.getOutput().contains(logName + " created"));
+        assertTrue(resp1.getOutput().contains(noteLogName + " created"));
+
+        // Create a file for the database
+        tempDbFileNote = new File(noteTableName + ".db");
+        tempDbFileTag = new File(tagTableName + ".db");
+
+        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
+        servlet.init();
+
+        tagDB = TagDB.getInstance(tempDbFileTag);
+        noteDB = NoteDB.getInstance(tempDbFileNote);
+
+        assertNotNull(noteLogName + " map should be initialized", noteDB);
+        assertNotNull(tagLogName + " map should be initialized", tagDB);
 
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains(logName + " already exists"));
+        assertTrue(resp2.getOutput().contains(noteLogName + " already exists"));
     }
 
     @Test
     public void testCreateNoteWithInvalidJson() throws Exception {
+        setUp();
+
         StubHttpServletResponse resp = new StubHttpServletResponse();
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
 
@@ -740,15 +789,16 @@ public class CreateNoteServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid " + logName + " data"));
+        assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
     }
 
     @Test
     public void testCreateNoteWithEmptyTitle() throws Exception {
+        setUp();
+
         Note note = NoteFactory.fromJson(inputJson);
 
-        String[] invalidTitle = {null, ""};
-
+        String[] invalidTitle = { null, "" };
 
         for (String title : invalidTitle) {
             note.setTitle(title);
@@ -765,9 +815,11 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNoteWithInvalidTags() throws Exception {
+        setUp();
+
         Note note = NoteFactory.fromJson(inputJson);
         String tag = ""; // Invalid tag
-        
+
         note.setTags(new String[] { tag });
         String json = gson.toJson(note);
 
@@ -779,41 +831,24 @@ public class CreateNoteServletTest {
         assertTrue(resp.getOutput().contains("Tag " + tag + " does not exist"));
     }
 
-    // Helper to access private field for assertion
-    private Object getNoteMap(CreateNoteServlet servlet) {
-        final String fieldName = "noteMap";
-        try {
-            java.lang.reflect.Field notesField = CreateNoteServlet.class.getDeclaredField(fieldName);
-            notesField.setAccessible(true);
-            return notesField.get(servlet);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    @Test
+    public void testCreateNoteWithNullTags() throws Exception {
+        setUp();
 
-    // Helper to access private field for assertion
-    private Object getTagMap(CreateNoteServlet servlet) {
-        final String fieldName = "tagMap";
-        try {
-            java.lang.reflect.Field notesField = CreateNoteServlet.class.getDeclaredField(fieldName);
-            notesField.setAccessible(true);
-            return notesField.get(servlet);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+        Note note = NoteFactory.fromJson(inputJson);
 
-    private File createTempFile(File tempDbFile) throws IOException {
-        if (tempDbFile != null && tempDbFile.exists()) {
-            if (!tempDbFile.delete()) {
-                throw new IOException("Could not delete old temp DB file: " + tempDbFile.getAbsolutePath());
-            }
-        }
-        tempDbFile = File.createTempFile(tableName + "-test", ".db");
-        if (tempDbFile.exists() && !tempDbFile.delete()) {
-            throw new IOException("Could not delete just-created temp DB file: " + tempDbFile.getAbsolutePath());
-        }
+        String[] invalidTags = { null, "" };
 
-        return new File(tempDbFile.getAbsolutePath());
+        for (String tag : invalidTags) {
+            note.setTags(new String[] { tag });
+            String json = gson.toJson(note);
+
+            StubHttpServletRequest req = new StubHttpServletRequest(json);
+            StubHttpServletResponse resp = new StubHttpServletResponse();
+
+            servlet.doPost(req, resp);
+            assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+            assertTrue(resp.getOutput().contains(tagLogName + " name required"));
+        }
     }
 }

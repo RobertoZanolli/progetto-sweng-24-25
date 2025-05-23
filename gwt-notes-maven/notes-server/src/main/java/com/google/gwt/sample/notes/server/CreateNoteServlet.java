@@ -16,92 +16,61 @@ import javax.servlet.http.*;
 import java.io.*;
 
 public class CreateNoteServlet extends HttpServlet {
-    private DB db;
-    HTreeMap<String, Note> noteMap;
-    HTreeMap<String, Tag> tagMap;
-    private static final Gson gson = new Gson();
-    private String dbPathNote = null;
-    private String dbPathTag = null;
+    private File dbFileNote = null;
+    private File dbFileTag = null;
     private final String noteTableName = "notes";
     private final String noteLogName = "Note";
     private final String tagTableName = "tags";
     private final String tagLogName = "Tag";
+    private TagDB tagDB;
+    private NoteDB noteDB;
 
     public CreateNoteServlet() {
         // Default constructor for servlet container
     }
 
-    public CreateNoteServlet(String dbPathNote, String dbPathTag) {
-        this.dbPathNote = dbPathNote;
-        this.dbPathTag = dbPathTag;
+    public CreateNoteServlet(File dbFileNote, File dbFileTag) {
+        this.dbFileNote = dbFileNote;
+        this.dbFileTag = dbFileTag;
     }
 
-    public void setDbPathNote(String dbPath) {
-        this.dbPathNote = dbPath;
+    public void setDbFileNote(File dbFile) {
+        this.dbFileNote = dbFile;
     }
 
-    public void setDbPathTag(String dbPath) {
-        this.dbPathTag = dbPath;
+    public void setDbPathTag(File dbFile) {
+        this.dbFileTag = dbFile;
     }
 
     @Override
     public void init() {
-        String pathToUse = dbPathNote != null ? dbPathNote : new java.io.File(noteTableName + ".db").getAbsolutePath();
-        try {
-            System.out.println("[CreateNoteServlet] Attempting to open DB at: " + pathToUse);
-            db = DBMaker.fileDB(pathToUse).make();
-            noteMap = db.hashMap(noteTableName, Serializer.STRING, Serializer.JAVA).createOrOpen();
+        this.dbFileTag = dbFileTag != null ? dbFileTag : new File(tagTableName + ".db");
+        this.dbFileNote = dbFileNote != null ? dbFileNote : new File(noteTableName + ".db");
 
-            if (noteMap == null) {
-                throw new RuntimeException("Failed to initialize " + noteTableName + " map: " + noteTableName
-                        + " is null after createOrOpen() at " + pathToUse);
-            }
-            System.out.println(
-                    "[CreateNoteServlet] DB and " + noteTableName + " map initialized successfully at: " + pathToUse);
-        } catch (Exception e) {
-            noteMap = null;
-            db = null;
-            System.err.println("CreateNoteServlet init error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            try {
-                System.err.println("[CreateNoteServlet] Failed DB path: " + pathToUse);
-            } catch (Exception ex) {
-                System.err.println("[CreateNoteServlet] Could not determine absolute path for " + pathToUse + ": "
-                        + ex.getMessage());
-            }
-        }
-
-        pathToUse = dbPathTag != null ? dbPathTag : new java.io.File(tagTableName + ".db").getAbsolutePath();
-        try {
-            System.out.println("[CreateNoteServlet] Attempting to open DB at: " + pathToUse);
-            db = DBMaker.fileDB(pathToUse).make();
-            tagMap = db.hashMap(tagTableName, Serializer.STRING, Serializer.JAVA).createOrOpen();
-
-            if (tagMap == null) {
-                throw new RuntimeException("Failed to initialize " + tagTableName + " map: " + tagTableName
-                        + " is null after createOrOpen() at " + pathToUse);
-            }
-            System.out.println(
-                    "[CreateNoteServlet] DB and " + tagTableName + " map initialized successfully at: " + pathToUse);
-        } catch (Exception e) {
-            tagMap = null;
-            db = null;
-            System.err.println("CreateNoteServlet init error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            try {
-                System.err.println("[CreateNoteServlet] Failed DB path: " + pathToUse);
-            } catch (Exception ex) {
-                System.err.println("[CreateNoteServlet] Could not determine absolute path for " + pathToUse + ": "
-                        + ex.getMessage());
-            }
-        }
+        // use only to remake the database
+        /*
+         * if (dbFileNote.exists()) {
+         * dbFileNote.delete();
+         * }
+         */
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        this.tagDB = TagDB.getInstance(dbFileTag);
+        this.noteDB = NoteDB.getInstance(dbFileNote);
+        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
+        HTreeMap<String, Note> noteMap = noteDB.getNoteMap();
+
         if (noteMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write(noteTableName + " database not initialized");
+            return;
+        }
+
+        if (tagMap == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(tagTableName + " database not initialized");
             return;
         }
 
@@ -109,6 +78,7 @@ public class CreateNoteServlet extends HttpServlet {
         try {
             String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             note = NoteFactory.fromJson(strNote);
+            System.err.println(strNote);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());
@@ -128,6 +98,11 @@ public class CreateNoteServlet extends HttpServlet {
         // verifico se i tag esistono
         if (note.getTags() != null) {
             for (String tag : note.getTags()) {
+                if (tag == null || tag.isEmpty()) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write(tagLogName+" name required");
+                    return;
+                }
                 if (!tagMap.containsKey(tag)) {
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                     resp.getWriter().write("Tag " + tag + " does not exist");
@@ -137,13 +112,20 @@ public class CreateNoteServlet extends HttpServlet {
         }
 
         noteMap.put(note.getId(), note);
-        db.commit();
+        this.noteDB.commit();
+        this.noteDB.close();
+        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " created");
     }
 
     @Override
     public void destroy() {
-        db.close();
+        if (noteDB != null) {
+            noteDB.close();
+        }
+        if (tagDB != null) {
+            tagDB.close();
+        }
     }
 }

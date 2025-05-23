@@ -15,57 +15,36 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
+import java.util.Objects;
 
 public class CreateTagServlet extends HttpServlet {
-    private DB db;
-    HTreeMap<String, Tag> tagMap;
     private static final Gson gson = new Gson();
-    private String dbPath = null;
+    private File dbFile = null;
     private final String tagTableName = "tags";
     private final String tagLogName = "Tag";
+    private TagDB tagDB;
 
     public CreateTagServlet() {
         // Default constructor for servlet container
     }
 
-    public CreateTagServlet(String dbPath) {
-        this.dbPath = dbPath;
+    public CreateTagServlet(File dbFile) {
+        this.dbFile = dbFile;
     }
 
-    public void setDbPath(String dbPath) {
-        this.dbPath = dbPath;
+    public void setDbFile(File dbFile) {
+        this.dbFile = dbFile;
     }
 
     @Override
     public void init() {
-        String pathToUse = dbPath != null ? dbPath : new java.io.File(tagTableName + ".db").getAbsolutePath();
-        try {
-            System.out.println("[CreateTagServlet] Attempting to open DB at: " + pathToUse);
-            db = DBMaker.fileDB(pathToUse).make();
-            tagMap = db.hashMap(tagTableName, Serializer.STRING, Serializer.JAVA).createOrOpen();
-
-            if (tagMap == null) {
-                throw new RuntimeException("Failed to initialize " + tagTableName + " map: " + tagTableName
-                        + " is null after createOrOpen() at " + pathToUse);
-            }
-            System.out.println(
-                    "[CreateTagServlet] DB and " + tagTableName + " map initialized successfully at: " + pathToUse);
-        } catch (Exception e) {
-            tagMap = null;
-            db = null;
-            System.err.println("CreateTagServlet init error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            try {
-                System.err.println("[CreateTagServlet] Failed DB path: " + pathToUse);
-            } catch (Exception ex) {
-                System.err.println("[CreateTagServlet] Could not determine absolute path for " + pathToUse + ": "
-                        + ex.getMessage());
-            }
-        }
+        this.dbFile = dbFile != null ? dbFile : new File(tagTableName + ".db");
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        this.tagDB = TagDB.getInstance(this.dbFile);
+        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
         if (tagMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write(tagTableName + " database not initialized");
@@ -92,13 +71,16 @@ public class CreateTagServlet extends HttpServlet {
         }
 
         tagMap.put(tag.getName(), tag);
-        db.commit();
+        this.tagDB.commit();
+        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(tagLogName + " created");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.tagDB = TagDB.getInstance(this.dbFile);
+        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
         if (tagMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write(tagTableName + " database not initialized");
@@ -111,6 +93,8 @@ public class CreateTagServlet extends HttpServlet {
         // Converti il Set in array di stringhe
         String[] tagsArray = tagMap.keySet().toArray(new String[0]);
 
+        tagDB.close();
+
         // Usa Gson per serializzare l'array in JSON
         String json = new Gson().toJson(tagsArray);
 
@@ -119,8 +103,10 @@ public class CreateTagServlet extends HttpServlet {
         out.flush();
     }
 
-        @Override
+    @Override
     public void destroy() {
-        db.close();
+        if (tagDB != null) {
+            tagDB.close();
+        }
     }
 }
