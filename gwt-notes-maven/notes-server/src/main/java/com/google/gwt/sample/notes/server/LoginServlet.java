@@ -1,28 +1,30 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gwt.sample.notes.shared.User;
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 
 import javax.servlet.http.*;
 import java.io.*;
 
-public class RegisterServlet extends HttpServlet {
+public class LoginServlet extends HttpServlet {
+    private DB db;
+    private HTreeMap<String, String> users;
     private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
 
-    public RegisterServlet() {
-        // Default constructor for servlet container
-    }
-    public RegisterServlet(String dbPath) {
-        this.dbPath = dbPath;
-    }
+    public LoginServlet() {}
+    public LoginServlet(String dbPath) { this.dbPath = dbPath; }
 
     @Override
     public void init() {
         String pathToUse = dbPath != null ? dbPath : new java.io.File("users.db").getAbsolutePath();
+        
         userDB = UserDB.getInstance(pathToUse);
     }
 
@@ -34,8 +36,7 @@ public class RegisterServlet extends HttpServlet {
             resp.getWriter().write("User database not initialized");
             return;
         }
-
-        User user = null;
+        User user;
         try {
             user = gson.fromJson(req.getReader(), User.class);
         } catch (Exception e) {
@@ -43,36 +44,20 @@ public class RegisterServlet extends HttpServlet {
             resp.getWriter().write("Invalid user data");
             return;
         }
-
-        if (user == null || user.getEmail() == null || user.getEmail().isEmpty()) {
+        if (user == null || user.getEmail() == null || user.getPassword() == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("email required");
+            resp.getWriter().write("email and password required");
             return;
         }
-
-        if (!user.getEmail().contains("@")) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("invalid email");
+        String hash = users.get(user.getEmail());
+        if (hash == null || !Password.check(user.getPassword(), hash).withBcrypt()) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("Invalid credentials");
             return;
         }
-
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("password required");
-            return;
-        }
-
-        if (users.containsKey(user.getEmail())) {
-            resp.setStatus(HttpServletResponse.SC_CONFLICT);
-            resp.getWriter().write("User already exists");
-            return;
-        }
-
-        String hash = Password.hash(user.getPassword()).withBcrypt().getResult();
-        users.put(user.getEmail(), hash);
-        userDB.commit();
-        
+        HttpSession session = req.getSession(true);
+        session.setAttribute("user", user.getEmail());
         resp.setStatus(HttpServletResponse.SC_OK);
-        resp.getWriter().write("User registered");
+        resp.getWriter().write("Login successful");
     }
 }

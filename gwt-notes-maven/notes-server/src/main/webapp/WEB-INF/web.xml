@@ -17,5 +17,13 @@
     <servlet-name>RegisterServlet</servlet-name>
     <url-pattern>/api/register</url-pattern>
 </servlet-mapping>
+  <servlet>
+    <servlet-name>LoginServlet</servlet-name>
+    <servlet-class>com.google.gwt.sample.notes.server.LoginServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+    <servlet-name>LoginServlet</servlet-name>
+    <url-pattern>/api/login</url-pattern>
+</servlet-mapping>
 
 </web-app>

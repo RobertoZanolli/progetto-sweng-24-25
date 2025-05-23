@@ -8,5 +8,6 @@ public class notes implements EntryPoint {
     public void onModuleLoad() {
         // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single page app
         RootPanel.get("mainPanel").add(new RegistrationPanel());
+        RootPanel.get("mainPanel").add(new LoginPanel());
     }
 }
