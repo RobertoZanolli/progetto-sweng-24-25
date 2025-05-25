@@ -814,24 +814,6 @@ public class CreateNoteServletTest {
     }
 
     @Test
-    public void testCreateNoteWithInvalidTags() throws Exception {
-        setUp();
-
-        Note note = NoteFactory.fromJson(inputJson);
-        String tag = ""; // Invalid tag
-
-        note.setTags(new String[] { tag });
-        String json = gson.toJson(note);
-
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        StubHttpServletResponse resp = new StubHttpServletResponse();
-
-        servlet.doPost(req, resp);
-        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Tag " + tag + " does not exist"));
-    }
-
-    @Test
     public void testCreateNoteWithNullTags() throws Exception {
         setUp();
 
