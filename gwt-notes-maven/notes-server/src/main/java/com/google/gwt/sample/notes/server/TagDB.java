@@ -21,15 +21,9 @@ public class TagDB extends AbstractDB<String, Tag> {
     }
 
     public static synchronized void resetInstance() {
-        if (instance != null) {
+        if (instance != null && instance.db != null) {
             instance.db.close();
         }
         instance = null;
-    }
-
-    @Override
-    public void close() {
-        super.close();
-        resetInstance();
     }
 }

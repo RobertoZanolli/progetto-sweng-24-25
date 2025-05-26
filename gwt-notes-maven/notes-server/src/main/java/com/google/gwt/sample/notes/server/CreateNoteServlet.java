@@ -105,8 +105,6 @@ public class CreateNoteServlet extends HttpServlet {
 
         noteMap.put(note.getId(), note);
         this.noteDB.commit();
-        this.noteDB.close();
-        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " created");
     }

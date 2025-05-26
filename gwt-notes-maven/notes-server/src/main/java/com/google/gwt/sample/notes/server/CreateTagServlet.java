@@ -63,7 +63,6 @@ public class CreateTagServlet extends HttpServlet {
 
         tagMap.put(tag.getName(), tag);
         this.tagDB.commit();
-        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(tagLogName + " created");
     }
@@ -83,8 +82,6 @@ public class CreateTagServlet extends HttpServlet {
 
         // Converti il Set in array di stringhe
         String[] tagsArray = tagMap.keySet().toArray(new String[0]);
-
-        tagDB.close();
 
         // Usa Gson per serializzare l'array in JSON
         String json = new Gson().toJson(tagsArray);

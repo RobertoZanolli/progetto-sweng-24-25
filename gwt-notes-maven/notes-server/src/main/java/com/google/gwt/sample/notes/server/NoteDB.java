@@ -20,16 +20,10 @@ public class NoteDB extends AbstractDB<String, Note> {
         return instance;
     }
 
-    public static void resetInstance() {
-        if (instance != null) {
+    public static synchronized void resetInstance() {
+        if (instance != null && instance.db != null) {
             instance.db.close();
         }
         instance = null;
-    }
-
-    @Override
-    public void close() {
-        super.close();
-        resetInstance();
     }
 }

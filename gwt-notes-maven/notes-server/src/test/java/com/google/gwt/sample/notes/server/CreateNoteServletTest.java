@@ -44,28 +44,32 @@ public class CreateNoteServletTest {
         // Create a temporary file for the database
         tempDbFileNote = File.createTempFile(noteTableName, ".db");
         if (tempDbFileNote.exists()) {
-            tempDbFileNote.delete(); // oppure usa Files.deleteIfExists(path)
+            tempDbFileNote.delete();
         }
         tempDbFileTag = File.createTempFile(tagTableName, ".db");
         if (tempDbFileTag.exists()) {
-            tempDbFileTag.delete(); // oppure usa Files.deleteIfExists(path)
+            tempDbFileTag.delete();
         }
-
         servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
         servlet.init();
-
         TagDB tagDB = TagDB.getInstance(tempDbFileTag);
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
-
         assertNotNull(noteLogName + " map should be initialized", noteDB);
         assertNotNull(tagLogName + " map should be initialized", tagDB);
     }
 
     @After
     public void tearDown() {
-        servlet.destroy();
+        if (servlet != null) {
+            servlet.destroy();
+        }
+        NoteDB.resetInstance();
+        TagDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists()) {
             tempDbFileNote.delete();
+        }
+        if (tempDbFileTag != null && tempDbFileTag.exists()) {
+            tempDbFileTag.delete();
         }
     }
 
@@ -686,21 +690,6 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNewNote() throws Exception {
-        setUp();
-
-        /*
-         * String inputJson = "{\r\n" + //
-         * "  \"title\": \"Esempio di nota\",\r\n" + //
-         * "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
-         * "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-         * "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-         * "  \"tags\": [\"test\", \"esempio\", \"nota\"],\r\n" + //
-         * "  \"owner\": {\r\n" + //
-         * "    \"username\": \"utente_test\",\r\n" + //
-         * "    \"email\": \"utente@example.com\"\r\n" + //
-         * "  }\r\n" + //
-         * "}";
-         */
         Note user = NoteFactory.fromJson(inputJson);
         String json = gson.toJson(user);
 
@@ -726,47 +715,18 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateDuplicateNote() throws Exception {
-        // Create a file for the database
-        tempDbFileNote = new File(noteTableName + ".db");
-        if (tempDbFileNote.exists()) {
-            tempDbFileNote.delete(); // oppure usa Files.deleteIfExists(path)
-        }
-        tempDbFileTag = new File(tagTableName + ".db");
-        if (tempDbFileTag.exists()) {
-            tempDbFileTag.delete(); // oppure usa Files.deleteIfExists(path)
-        }
-
-        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
-        servlet.init();
-
-        TagDB tagDB = TagDB.getInstance(tempDbFileTag);
-        NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
-
-        assertNotNull(noteLogName + " map should be initialized", noteDB);
-        assertNotNull(tagLogName + " map should be initialized", tagDB);
-
+        // Use the setup servlet and db files, do not recreate them
         Note user = NoteFactory.fromJson(inputJson);
         String json = gson.toJson(user);
 
+        // First creation should succeed
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
         assertTrue(resp1.getOutput().contains(noteLogName + " created"));
 
-        // Create a file for the database
-        tempDbFileNote = new File(noteTableName + ".db");
-        tempDbFileTag = new File(tagTableName + ".db");
-
-        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
-        servlet.init();
-
-        tagDB = TagDB.getInstance(tempDbFileTag);
-        noteDB = NoteDB.getInstance(tempDbFileNote);
-
-        assertNotNull(noteLogName + " map should be initialized", noteDB);
-        assertNotNull(tagLogName + " map should be initialized", tagDB);
-
+        // Second creation (duplicate) should fail with conflict
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
@@ -776,8 +736,6 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNoteWithInvalidJson() throws Exception {
-        setUp();
-
         StubHttpServletResponse resp = new StubHttpServletResponse();
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
 
@@ -791,8 +749,6 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNoteWithEmptyTitle() throws Exception {
-        setUp();
-
         Note note = NoteFactory.fromJson(inputJson);
 
         String[] invalidTitle = { null, "" };
@@ -812,8 +768,6 @@ public class CreateNoteServletTest {
 
     @Test
     public void testCreateNoteWithNullTags() throws Exception {
-        setUp();
-
         Note note = NoteFactory.fromJson(inputJson);
 
         String[] invalidTags = { null, "" };
