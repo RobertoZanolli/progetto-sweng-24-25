@@ -2,12 +2,9 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.User;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -42,7 +39,7 @@ public class CreateNoteServletTest {
     private final String tagTableName = "tagsTest";
     private final String tagLogName = "Tag";
 
-    // before but not for evrey test
+    @Before
     public void setUp() throws IOException {
         // Create a temporary file for the database
         tempDbFileNote = File.createTempFile(noteTableName, ".db");

@@ -2,29 +2,15 @@ package com.google.gwt.sample.notes.server;
 
 import java.io.File;
 
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 
 import com.google.gwt.sample.notes.shared.Note;
 
-public class NoteDB {
+public class NoteDB extends AbstractDB<String, Note> {
     private static NoteDB instance;
-    private DB db;
-    private HTreeMap<String, Note> noteMap;
-    private final String noteTableName = "notes";
-
 
     private NoteDB(File dbFile) {
-        try {
-            db = DBMaker.fileDB(dbFile).fileMmapPreclearDisable().transactionEnable().make();
-            noteMap = db.hashMap(noteTableName, Serializer.STRING, Serializer.JAVA).createOrOpen();
-        } catch (Exception e) {
-            noteMap = null;
-            db = null;
-            e.printStackTrace();
-        }
+        super(dbFile, "notes", Serializer.STRING, Serializer.JAVA);
     }
 
     public static synchronized NoteDB getInstance(File dbFile) {
@@ -34,20 +20,16 @@ public class NoteDB {
         return instance;
     }
 
-    public HTreeMap<String, Note> getNoteMap() {
-        return noteMap;
-    }
-
-    public void commit() {
-        if (db != null) db.commit();
-    }
-
-    public void close() {
-        if (db != null) {
-            db.close();
-            db = null;
+    public static void resetInstance() {
+        if (instance != null) {
+            instance.db.close();
         }
         instance = null;
-        noteMap = null;
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        resetInstance();
     }
 }

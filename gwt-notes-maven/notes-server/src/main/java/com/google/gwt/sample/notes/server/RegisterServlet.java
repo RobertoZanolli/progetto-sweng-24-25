@@ -23,12 +23,12 @@ public class RegisterServlet extends HttpServlet {
     @Override
     public void init() {
         String pathToUse = dbPath != null ? dbPath : new java.io.File("users.db").getAbsolutePath();
-        userDB = UserDB.getInstance(pathToUse);
+        userDB = UserDB.getInstance(new File(pathToUse));
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HTreeMap<String, String> users = userDB.getUsers();
+        HTreeMap<String, String> users = userDB.getMap();
         if (users == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write("User database not initialized");
