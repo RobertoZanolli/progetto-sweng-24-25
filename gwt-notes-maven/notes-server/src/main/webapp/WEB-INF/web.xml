@@ -20,20 +20,20 @@
 	</servlet-mapping>
 
 	<servlet>
-		<servlet-name>CreateTagServlet</servlet-name>
-		<servlet-class>com.google.gwt.sample.notes.server.CreateTagServlet</servlet-class>
+		<servlet-name>TagServlet</servlet-name>
+		<servlet-class>com.google.gwt.sample.notes.server.TagServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>CreateTagServlet</servlet-name>
+		<servlet-name>TagServlet</servlet-name>
 		<url-pattern>/api/tags</url-pattern>
 	</servlet-mapping>
 
 	<servlet>
-		<servlet-name>CreateNoteServlet</servlet-name>
-		<servlet-class>com.google.gwt.sample.notes.server.CreateNoteServlet</servlet-class>
+		<servlet-name>NoteServlet</servlet-name>
+		<servlet-class>com.google.gwt.sample.notes.server.NoteServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>CreateNoteServlet</servlet-name>
+		<servlet-name>NoteServlet</servlet-name>
 		<url-pattern>/api/notes</url-pattern>
 	</servlet-mapping>
 

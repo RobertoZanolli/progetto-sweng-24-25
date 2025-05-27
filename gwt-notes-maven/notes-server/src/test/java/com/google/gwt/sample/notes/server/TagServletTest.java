@@ -30,8 +30,8 @@ import java.util.Map;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
-public class CreateTagServletTest {
-    private CreateTagServlet servlet;
+public class TagServletTest {
+    private TagServlet servlet;
     private Gson gson = new Gson();
     private final String tableName = "tagsTest";
     private final String logName = "Tag";
@@ -44,7 +44,7 @@ public class CreateTagServletTest {
         if (tempFile.exists()) {
             tempFile.delete();
         }
-        servlet = new CreateTagServlet(tempFile);
+        servlet = new TagServlet(tempFile);
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempFile);
         assertNotNull(logName + " DB should be initialized", tagDB);

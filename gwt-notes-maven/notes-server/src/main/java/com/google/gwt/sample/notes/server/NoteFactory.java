@@ -1,7 +1,8 @@
 package com.google.gwt.sample.notes.server;
+
+import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.User;
-import com.google.gson.Gson;
 
 import java.util.Date;
 

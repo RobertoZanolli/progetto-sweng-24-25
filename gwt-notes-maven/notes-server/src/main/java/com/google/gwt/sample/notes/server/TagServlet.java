@@ -8,18 +8,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
 
-public class CreateTagServlet extends HttpServlet {
+public class TagServlet extends HttpServlet {
     private static final Gson gson = new Gson();
     private File dbFile = null;
     private final String tagTableName = "tags";
     private final String tagLogName = "Tag";
     private TagDB tagDB;
 
-    public CreateTagServlet() {
+    public TagServlet() {
         // Default constructor for servlet container
     }
 
-    public CreateTagServlet(File dbFile) {
+    public TagServlet(File dbFile) {
         this.dbFile = dbFile;
     }
 

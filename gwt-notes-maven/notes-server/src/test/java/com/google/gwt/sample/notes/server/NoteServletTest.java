@@ -2,6 +2,7 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,8 +30,8 @@ import java.util.Map;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
-public class CreateNoteServletTest {
-    private CreateNoteServlet servlet;
+public class NoteServletTest {
+    private NoteServlet servlet;
     private Gson gson = new Gson();
     private File tempDbFileNote;
     private File tempDbFileTag;
@@ -50,7 +51,7 @@ public class CreateNoteServletTest {
         if (tempDbFileTag.exists()) {
             tempDbFileTag.delete();
         }
-        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
+        servlet = new NoteServlet(tempDbFileNote, tempDbFileTag);
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempDbFileTag);
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);

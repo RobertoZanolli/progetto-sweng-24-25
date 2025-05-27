@@ -3,12 +3,13 @@ package com.google.gwt.sample.notes.server;
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
+
 import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
 import java.io.*;
 
-public class CreateNoteServlet extends HttpServlet {
+public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
     private File dbFileTag = null;
     private final String noteTableName = "notes";
@@ -18,11 +19,11 @@ public class CreateNoteServlet extends HttpServlet {
     private TagDB tagDB;
     private NoteDB noteDB;
 
-    public CreateNoteServlet() {
+    public NoteServlet() {
         // Default constructor for servlet container
     }
 
-    public CreateNoteServlet(File dbFileNote, File dbFileTag) {
+    public NoteServlet(File dbFileNote, File dbFileTag) {
         this.dbFileNote = dbFileNote;
         this.dbFileTag = dbFileTag;
     }

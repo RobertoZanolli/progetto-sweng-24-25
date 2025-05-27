@@ -24,19 +24,19 @@ import java.util.List;
 
 public class CreateNotePanel extends Composite {
 
-    private VerticalPanel panel = new VerticalPanel();
-    private TextBox titleBox = new TextBox();
-    private TextArea contentBox = new TextArea();
+    private final VerticalPanel panel = new VerticalPanel();
+    private final TextBox titleBox = new TextBox();
+    private final TextArea contentBox = new TextArea();
 
     @SuppressWarnings("deprecation")
-    private ListBox tagListBox = new ListBox(true); // selezione multipla
+    private final ListBox tagListBox = new ListBox(true); // selezione multipla
     
-    private Button saveButton = new Button("Salva nota");
-    private Label charCountLabel = new Label("0 / 280");
+    private final Button saveButton = new Button("Salva nota");
+    private final Label charCountLabel = new Label("0 / 280");
     private final Label feedbackLabel = new Label();
-    private TextBox newTagBox = new TextBox();
-    private Button addTagButton = new Button("Aggiungi tag");
-    private Button backButton = new Button("Indietro");
+    private final TextBox newTagBox = new TextBox();
+    private final Button addTagButton = new Button("Aggiungi tag");
+    private final Button backButton = new Button("Indietro");
     private final String tagLogName = "Tag";
     private final String noteLogName = "Note";
 
@@ -60,7 +60,7 @@ public class CreateNotePanel extends Composite {
 
         panel.add(new Label("Tag (Ctrl+Click per selezione multipla):"));
 
-        getTag();
+        getTags();
         panel.add(tagListBox);
 
         panel.add(new Label("Aggiungi nuovo tag:"));
@@ -88,7 +88,7 @@ public class CreateNotePanel extends Composite {
                 payload.put("name", new JSONString(newTag));
 
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
-                        GWT.getHostPageBaseURL() + "createTag");
+                        GWT.getHostPageBaseURL() + "api/tags");
                 builder.setHeader("Content-Type", "application/json");
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
@@ -144,7 +144,7 @@ public class CreateNotePanel extends Composite {
             payload.put("content", new JSONString(content));
             payload.put("tags", tagsArray);
 
-            RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "createNote");
+            RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
             builder.setHeader("Content-Type", "application/json");
             try {
                 builder.sendRequest(payload.toString(), new RequestCallback() {
@@ -196,9 +196,9 @@ public class CreateNotePanel extends Composite {
         }
     }
 
-    private void getTag() {
+    private void getTags() {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
-                GWT.getHostPageBaseURL() + "createTag");
+                GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
         try {
             builder.setCallback(new RequestCallback() {
@@ -206,7 +206,7 @@ public class CreateNotePanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        List<String> tags = parseJsonArray(json);
+                        List<String> tags = parseTagsJson(json);
 
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
@@ -227,7 +227,7 @@ public class CreateNotePanel extends Composite {
         }
     }
 
-    public List<String> parseJsonArray(String jsonString) {
+    public List<String> parseTagsJson(String jsonString) {
         List<String> result = new ArrayList<>();
         JSONValue value = JSONParser.parseStrict(jsonString);
         JSONArray array = value.isArray();
