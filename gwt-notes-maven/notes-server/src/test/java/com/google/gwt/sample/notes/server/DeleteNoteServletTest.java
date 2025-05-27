@@ -68,6 +68,7 @@ public class DeleteNoteServletTest {
     private static class StubHttpServletRequest implements javax.servlet.http.HttpServletRequest {
         private final BufferedReader reader;
 
+        @SuppressWarnings("unused")
         public StubHttpServletRequest(String body) {
             this.reader = new BufferedReader(new StringReader(body));
         }

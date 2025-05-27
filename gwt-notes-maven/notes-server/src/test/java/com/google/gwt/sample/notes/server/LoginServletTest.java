@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("deprecation")
 public class LoginServletTest {
     private LoginServlet servlet;
     private Gson gson = new Gson();

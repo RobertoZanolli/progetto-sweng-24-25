@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.client;
 
-import com.google.gson.Gson;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.http.client.Request;
@@ -18,12 +17,8 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONValue;
-import com.google.gwt.json.client.JSONString;
-
-import java.io.Console;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +27,10 @@ public class CreateNotePanel extends Composite {
     private VerticalPanel panel = new VerticalPanel();
     private TextBox titleBox = new TextBox();
     private TextArea contentBox = new TextArea();
+
+    @SuppressWarnings("deprecation")
     private ListBox tagListBox = new ListBox(true); // selezione multipla
+    
     private Button saveButton = new Button("Salva nota");
     private Label charCountLabel = new Label("0 / 280");
     private final Label feedbackLabel = new Label();

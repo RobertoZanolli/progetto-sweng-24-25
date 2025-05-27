@@ -32,7 +32,10 @@ public class ViewNotesPanel extends Composite {
     private TextBox searchBox = new TextBox();
     private Button createNoteButton = new Button("Nuova Nota");
     private Button createTagButton = new Button("Nuovo Tag");
+
+    @SuppressWarnings("deprecation")
     private ListBox tagListBox = new ListBox(true);
+    
     private Button searchButton = new Button("Cerca");
     private Button exitButton = new Button("Esci");
 
