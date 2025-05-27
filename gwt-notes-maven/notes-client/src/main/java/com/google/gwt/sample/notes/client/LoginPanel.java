@@ -12,23 +12,30 @@ public class LoginPanel extends VerticalPanel {
     private final TextBox emailBox = new TextBox();
     private final PasswordTextBox passwordBox = new PasswordTextBox();
     private final Label feedbackLabel = new Label();
-    private final Button loginButton = new Button("Login");
+    private final Button loginButton = new Button("Accedi");
+    private final Button backButton = new Button("Indietro");
 
     public LoginPanel() {
         setSpacing(10);
-        add(new Label("Login"));
+        add(new Label("Accesso"));
         add(new Label("Email:"));
         add(emailBox);
         add(new Label("Password:"));
         add(passwordBox);
         add(loginButton);
         add(feedbackLabel);
+        add(backButton);
 
         loginButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
                 doLogin();
             }
+        });
+
+        backButton.addClickHandler(event -> {
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new HomePanel());
         });
     }
 
@@ -56,6 +63,8 @@ public class LoginPanel extends VerticalPanel {
                     loginButton.setEnabled(true);
                     if (response.getStatusCode() == Response.SC_OK) {
                         feedbackLabel.setText("Login successful!");
+                        RootPanel.get("mainPanel").clear();
+                        RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {
                         feedbackLabel.setText("Login failed: " + response.getText());
                     }
@@ -69,6 +78,7 @@ public class LoginPanel extends VerticalPanel {
         } catch (RequestException e) {
             loginButton.setEnabled(true);
             feedbackLabel.setText("Request error: " + e.getMessage());
+            return;
         }
     }
 }

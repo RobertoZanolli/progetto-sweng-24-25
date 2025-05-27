@@ -3,18 +3,24 @@ package com.google.gwt.sample.notes.client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.http.client.Request;
+import com.google.gwt.http.client.RequestBuilder;
+import com.google.gwt.http.client.RequestCallback;
+import com.google.gwt.http.client.RequestException;
+import com.google.gwt.http.client.Response;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONParser;
+import com.google.gwt.json.client.JSONString;
+import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HorizontalPanel;
-import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.Widget;
 
 public class ViewNotesPanel extends Composite {
 
@@ -22,9 +28,13 @@ public class ViewNotesPanel extends Composite {
     private List<Note> notes = new ArrayList<>();
     private List<Note> filteredNotes = new ArrayList<>();
 
+    private final Label feedbackLabel = new Label();
     private TextBox searchBox = new TextBox();
     private Button createNoteButton = new Button("Nuova Nota");
-    private Button createTagButton = new Button("Crea Tag");
+    private Button createTagButton = new Button("Nuovo Tag");
+    private ListBox tagListBox = new ListBox(true);
+    private Button searchButton = new Button("Cerca");
+    private Button exitButton = new Button("Esci");
 
     public ViewNotesPanel() {
         initWidget(panel);
@@ -32,28 +42,31 @@ public class ViewNotesPanel extends Composite {
         renderNotes();
     }
 
-    public ViewNotesPanel(List<Note> notes) {
-        this.notes = notes;
-        this.filteredNotes = new ArrayList<>(notes);
-        initWidget(panel);
-        setupUI();
-        renderNotes();
-    }
-
     private void setupUI() {
-        // Barra di ricerca
+        // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
-        searchBox.getElement().setPropertyString("placeholder", "Cerca note...");
-        searchPanel.add(new Label("Cerca: "));
+        searchPanel.setSpacing(10);
+        searchBox.getElement().setPropertyString("placeholder", "Cerca...");
+        searchPanel.add(new Label("Cerca per parole chiave: "));
         searchPanel.add(searchBox);
+        panel.add(searchPanel);
 
-        // Pulsanti navigazione
+        // Sezione di ricerca per tag
+        HorizontalPanel tagPanel = new HorizontalPanel();
+        tagPanel.setSpacing(10);
+        tagPanel.add(new Label("Cerca per tag (Ctrl+Click per selezione multipla): "));
+        tagPanel.add(tagListBox);
+        getTag();
+        panel.add(tagPanel);
+
+        // Bottone per la navigazione
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
+        buttonPanel.add(searchButton);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(createTagButton);
-
-        panel.add(searchPanel);
+        buttonPanel.add(exitButton);
+        panel.add(feedbackLabel);
         panel.add(buttonPanel);
 
         // Gestione evento ricerca (filtra lista note)
@@ -65,43 +78,37 @@ public class ViewNotesPanel extends Composite {
                 .collect(Collectors.toList());
             renderNotes();
         });
+        // Oppure con bottone
+        searchButton.addClickHandler(event -> {
+            // ToDo
+        });
 
         // Bottone per creare nuova nota (qui puoi collegare la logica di navigazione)
         createNoteButton.addClickHandler(event -> {
             // Ad esempio, puoi rimuovere questa view e aggiungere CreateNotePanel
-            // oppure usare un callback per comunicare al parent container di cambiare pannello
             panel.clear();
             panel.add(new CreateNotePanel());
         });
 
-        // Bottone per creare tag (aggiungi il tuo CreateTagPanel o altra UI)
         createTagButton.addClickHandler(event -> {
             // Simile al bottone sopra, cambia pannello o mostra dialog
             panel.clear();
-            panel.add(new CreateTagPanel()); // supponendo tu abbia questa classe
+            panel.add(new CreateTagPanel());
+        });
+
+        exitButton.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new HomePanel());
         });
     }
 
     private void renderNotes() {
         // Rimuovo precedenti note, ma mantengo barra e bottoni
-        if (panel.getWidgetCount() > 2) {
-            // Tieni solo i primi 2 widget (searchPanel e buttonPanel)
-            while (panel.getWidgetCount() > 2) {
-                panel.remove(2);
+        if (panel.getWidgetCount() > 4) {
+            // Tieni solo i primi 4 widget (searchPanel, tagPanel, buttonPanel e feedbackLabel)
+            while (panel.getWidgetCount() > 4) {
+                panel.remove(4);
             }
-        }
-
-        // Aggiungo le note filtrate
-        for (Note note : filteredNotes) {
-            HorizontalPanel notePanel = new HorizontalPanel();
-            notePanel.setSpacing(10);
-
-            Label titleContent = new Label(note.getTitle() + ": " + note.getContent());
-            Label lastMod = new Label("Ultima modifica: " + note.getLastModifiedDate());
-
-            notePanel.add(titleContent);
-            notePanel.add(lastMod);
-            panel.add(notePanel);
         }
     }
 
@@ -110,5 +117,53 @@ public class ViewNotesPanel extends Composite {
         this.notes = notes;
         this.filteredNotes = new ArrayList<>(notes);
         renderNotes();
+    }
+
+    // Aggiunge i tag alla list box
+    private void getTag() {
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
+                GWT.getHostPageBaseURL() + "createTag");
+        builder.setHeader("Content-Type", "application/json");
+        try {
+            builder.setCallback(new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        List<String> tags = parseJsonArray(json);
+
+                        for (String tag : tags) {
+                            tagListBox.addItem(tag);
+                        }
+                    } else {
+                        feedbackLabel.setText("Error fetching tags: " + response.getText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Error: " + exception.getMessage());
+                }
+            });
+            builder.send();
+        } catch (RequestException e) {
+            feedbackLabel.setText("Request error: " + e.getMessage());
+        }
+    }
+
+    public List<String> parseJsonArray(String jsonString) {
+        List<String> result = new ArrayList<>();
+        JSONValue value = JSONParser.parseStrict(jsonString);
+        JSONArray array = value.isArray();
+        if (array != null) {
+            for (int i = 0; i < array.size(); i++) {
+                JSONValue v = array.get(i);
+                JSONString s = v.isString();
+                if (s != null) {
+                    result.add(s.stringValue());
+                }
+            }
+        }
+        return result;
     }
 }
