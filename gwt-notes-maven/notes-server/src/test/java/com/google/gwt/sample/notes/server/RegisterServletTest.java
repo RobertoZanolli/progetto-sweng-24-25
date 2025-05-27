@@ -74,7 +74,7 @@ public class RegisterServletTest {
         assertTrue(resp.getOutput().contains("User registered"));
         
         // Verify user was actually added to DB
-        HTreeMap<String, String> users = UserDB.getInstance(tempDbFile.getAbsolutePath()).getUsers();
+        HTreeMap<String, String> users = UserDB.getInstance(tempDbFile).getMap();
         assertTrue(users.containsKey("newuser@test.it"));
     }
 

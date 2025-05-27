@@ -3,11 +3,9 @@ package com.google.gwt.sample.notes.server;
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.User;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -38,15 +36,14 @@ public class CreateTagServletTest {
     private final String tableName = "tagsTest";
     private final String logName = "Tag";
 
-    // before but not for evrey test
+    private File tempFile;
+    @Before
     public void setUp() throws IOException {
         // Create a temporary file for the database
-        File tempFile = File.createTempFile(tableName, ".db");
-        
+        tempFile = File.createTempFile(tableName, ".db");
         if (tempFile.exists()) {
-            tempFile.delete(); // oppure usa Files.deleteIfExists(path)
+            tempFile.delete();
         }
-
         servlet = new CreateTagServlet(tempFile);
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempFile);
@@ -55,7 +52,13 @@ public class CreateTagServletTest {
 
     @After
     public void tearDown() {
-        servlet.destroy();
+        if (servlet != null) {
+            servlet.destroy();
+        }
+        TagDB.resetInstance();
+        if (tempFile != null && tempFile.exists()) {
+            tempFile.delete();
+        }
     }
 
     private static class StubHttpServletRequest implements javax.servlet.http.HttpServletRequest {
@@ -675,8 +678,6 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateNewTag() throws Exception {
-        setUp();
-
         Tag tag = gson.fromJson(inputJson, Tag.class);
         String json = gson.toJson(tag);
 
@@ -693,36 +694,20 @@ public class CreateTagServletTest {
             "}";
 
     @Test
-
     public void testCreateDuplicateTag() throws Exception {
-        // Create a file for the database
-        File tempFile = new File(tableName+ ".db");
-        
-        if (tempFile.exists()) {
-            tempFile.delete(); // oppure usa Files.deleteIfExists(path)
-        }
-
-        servlet = new CreateTagServlet(tempFile);
-        servlet.init();
-        TagDB tagDB = TagDB.getInstance(tempFile);
-        assertNotNull(logName + " DB should be initialized", tagDB);
-
+        // Use the setup servlet and tempFile, do not recreate them
         Tag tag = gson.fromJson(inputJson, Tag.class);
         tag.setName(new Note().getId());
         String json = gson.toJson(tag);
 
+        // First creation should succeed
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
         assertTrue(resp1.getOutput().contains(logName + " created"));
 
-                servlet = new CreateTagServlet(tempFile);
-        servlet.init();
-        tagDB = TagDB.getInstance(tempFile);
-        assertNotNull(logName + " DB should be initialized", tagDB);
-
-
+        // Second creation (duplicate) should fail with conflict
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
@@ -732,8 +717,6 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateTagWithInvalidJson() throws Exception {
-        setUp();
-
         StubHttpServletResponse resp = new StubHttpServletResponse();
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
 
@@ -747,14 +730,11 @@ public class CreateTagServletTest {
 
     @Test
     public void testCreateTagWithInvalidName() throws Exception {
-        setUp();
-
         Tag tag1 = new Tag();
         Tag tag2 = new Tag("");
 
         for (Tag tag : new Tag[] { tag1, tag2 }) {
             String json = gson.toJson(tag);
-
             StubHttpServletRequest req = new StubHttpServletRequest(json);
             StubHttpServletResponse resp = new StubHttpServletResponse();
 

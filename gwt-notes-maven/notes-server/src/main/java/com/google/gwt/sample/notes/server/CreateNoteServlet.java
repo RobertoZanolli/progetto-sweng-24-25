@@ -2,16 +2,8 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.User;
-import com.google.gson.Gson;
-import com.password4j.Password;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
-import org.mapdb.BTreeMapJava.KeySet;
 
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
 
@@ -57,10 +49,10 @@ public class CreateNoteServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        this.tagDB = TagDB.getInstance(dbFileTag);
-        this.noteDB = NoteDB.getInstance(dbFileNote);
-        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
-        HTreeMap<String, Note> noteMap = noteDB.getNoteMap();
+        this.tagDB = TagDB.getInstance(this.dbFileTag);
+        this.noteDB = NoteDB.getInstance(this.dbFileNote);
+        HTreeMap<String, Tag> tagMap = tagDB.getMap();
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
 
         if (noteMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -113,8 +105,6 @@ public class CreateNoteServlet extends HttpServlet {
 
         noteMap.put(note.getId(), note);
         this.noteDB.commit();
-        this.noteDB.close();
-        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " created");
     }

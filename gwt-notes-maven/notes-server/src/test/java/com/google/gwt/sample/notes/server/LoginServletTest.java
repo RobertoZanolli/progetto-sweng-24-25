@@ -6,7 +6,6 @@ import com.password4j.Password;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mapdb.DB;
 import org.mapdb.HTreeMap;
 
 import javax.servlet.AsyncContext;
@@ -20,13 +19,11 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -57,11 +54,11 @@ public class LoginServletTest {
         servlet = new LoginServlet(dbPath);
         servlet.init();
         // Use UserDB to add the test user
-        HTreeMap<String, String> users = UserDB.getInstance(dbPath).getUsers();
+        HTreeMap<String, String> users = UserDB.getInstance(tempDbFile).getMap();
         assertNotNull(users);
         String hashedPassword = Password.hash("password123").withBcrypt().getResult();
         users.put("testuser@test.it", hashedPassword);
-        UserDB.getInstance(dbPath).commit();
+        UserDB.getInstance(tempDbFile).commit();
     }
 
     @After
@@ -70,6 +67,7 @@ public class LoginServletTest {
         if (tempDbFile != null && tempDbFile.exists()) tempDbFile.delete();
     }
 
+    /*
     private void setPrivateField(Object target, String fieldName, Object value) {
         try {
             Field field = LoginServlet.class.getDeclaredField(fieldName);
@@ -79,6 +77,7 @@ public class LoginServletTest {
             throw new RuntimeException("Failed to set field " + fieldName, e);
         }
     }
+    */
 
     @Test
     public void testSuccessfulLogin() throws Exception {

@@ -1,21 +1,12 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.User;
 import com.google.gson.Gson;
-import com.password4j.Password;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
-import org.mapdb.BTreeMapJava.KeySet;
 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
-import java.util.Objects;
 
 public class CreateTagServlet extends HttpServlet {
     private static final Gson gson = new Gson();
@@ -44,7 +35,7 @@ public class CreateTagServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         this.tagDB = TagDB.getInstance(this.dbFile);
-        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
+        HTreeMap<String, Tag> tagMap = tagDB.getMap();
         if (tagMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write(tagTableName + " database not initialized");
@@ -72,7 +63,6 @@ public class CreateTagServlet extends HttpServlet {
 
         tagMap.put(tag.getName(), tag);
         this.tagDB.commit();
-        this.tagDB.close();
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(tagLogName + " created");
     }
@@ -80,7 +70,7 @@ public class CreateTagServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         this.tagDB = TagDB.getInstance(this.dbFile);
-        HTreeMap<String, Tag> tagMap = tagDB.getTagMap();
+        HTreeMap<String, Tag> tagMap = tagDB.getMap();
         if (tagMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write(tagTableName + " database not initialized");
@@ -92,8 +82,6 @@ public class CreateTagServlet extends HttpServlet {
 
         // Converti il Set in array di stringhe
         String[] tagsArray = tagMap.keySet().toArray(new String[0]);
-
-        tagDB.close();
 
         // Usa Gson per serializzare l'array in JSON
         String json = new Gson().toJson(tagsArray);
