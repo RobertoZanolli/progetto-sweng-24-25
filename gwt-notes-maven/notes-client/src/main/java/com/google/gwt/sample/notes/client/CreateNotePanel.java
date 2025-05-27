@@ -38,6 +38,7 @@ public class CreateNotePanel extends Composite {
     private final Label feedbackLabel = new Label();
     private TextBox newTagBox = new TextBox();
     private Button addTagButton = new Button("Aggiungi tag");
+    private Button backButton = new Button("Indietro");
     private final String tagLogName = "Tag";
     private final String noteLogName = "Note";
 
@@ -70,6 +71,7 @@ public class CreateNotePanel extends Composite {
 
         panel.add(feedbackLabel);
         panel.add(saveButton);
+        panel.add(backButton);
     }
 
     private void setupHandlers() {
@@ -169,6 +171,11 @@ public class CreateNotePanel extends Composite {
             } catch (RequestException e) {
                 feedbackLabel.setText("Request error: " + e.getMessage());
             }
+        });
+
+        backButton.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new ViewNotesPanel());
         });
     }
 

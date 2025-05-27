@@ -31,9 +31,10 @@ public class ViewNotesPanel extends Composite {
     private final Label feedbackLabel = new Label();
     private TextBox searchBox = new TextBox();
     private Button createNoteButton = new Button("Nuova Nota");
-    private Button createTagButton = new Button("Crea Tag");
-    private ListBox tagListBox = new ListBox(true); // selezione multipla
+    private Button createTagButton = new Button("Nuovo Tag");
+    private ListBox tagListBox = new ListBox(true);
     private Button searchButton = new Button("Cerca");
+    private Button exitButton = new Button("Esci");
 
     public ViewNotesPanel() {
         initWidget(panel);
@@ -64,7 +65,9 @@ public class ViewNotesPanel extends Composite {
         buttonPanel.add(searchButton);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(createTagButton);
+        buttonPanel.add(exitButton);
         panel.add(feedbackLabel);
+        panel.add(buttonPanel);
 
         // Gestione evento ricerca (filtra lista note)
         searchBox.addKeyUpHandler(event -> {
@@ -91,6 +94,11 @@ public class ViewNotesPanel extends Composite {
             // Simile al bottone sopra, cambia pannello o mostra dialog
             panel.clear();
             panel.add(new CreateTagPanel());
+        });
+
+        exitButton.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new HomePanel());
         });
     }
 
