@@ -99,6 +99,10 @@ public class ViewNotesPanel extends Composite {
         exitButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new HomePanel());
+
+            /*
+             * ToDo: eseguire il logout (eliminare dati di sessione)
+             */
         });
     }
 
@@ -109,6 +113,12 @@ public class ViewNotesPanel extends Composite {
             while (panel.getWidgetCount() > 4) {
                 panel.remove(4);
             }
+        }
+
+        // Aggiungo note
+        for (Note note : filteredNotes) {
+            Label noteLabel = new Label(note.getTitle());
+            panel.add(noteLabel);
         }
     }
 

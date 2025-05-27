@@ -676,6 +676,7 @@ public class CreateTagServletTest {
         }
     }
 
+    // doPost test
     @Test
     public void testCreateNewTag() throws Exception {
         Tag tag = gson.fromJson(inputJson, Tag.class);
@@ -693,6 +694,7 @@ public class CreateTagServletTest {
             "  \"name\": \"nuovo tag\"\r\n" + //
             "}";
 
+    // doPost test
     @Test
     public void testCreateDuplicateTag() throws Exception {
         // Use the setup servlet and tempFile, do not recreate them
@@ -715,6 +717,7 @@ public class CreateTagServletTest {
         assertTrue(resp2.getOutput().contains(logName + " already exists"));
     }
 
+    // doPost test
     @Test
     public void testCreateTagWithInvalidJson() throws Exception {
         StubHttpServletResponse resp = new StubHttpServletResponse();
@@ -728,6 +731,7 @@ public class CreateTagServletTest {
         assertTrue(resp.getOutput().contains("Invalid " + logName + " data"));
     }
 
+    // doPost test
     @Test
     public void testCreateTagWithInvalidName() throws Exception {
         Tag tag1 = new Tag();
@@ -742,5 +746,27 @@ public class CreateTagServletTest {
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
             assertTrue(resp.getOutput().contains("Name required"));
         }
+    }
+
+    // doGet test
+    @Test
+    public void testGetTags() throws Exception {
+        Tag tag = gson.fromJson(inputJson, Tag.class);
+        String json = gson.toJson(tag);
+
+        // Crea il tag
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Testa la GET
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("nuovo tag"));
     }
 }

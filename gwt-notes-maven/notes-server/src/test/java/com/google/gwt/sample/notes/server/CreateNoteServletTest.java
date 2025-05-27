@@ -688,6 +688,7 @@ public class CreateNoteServletTest {
         }
     }
 
+    // doPost test
     @Test
     public void testCreateNewNote() throws Exception {
         Note user = NoteFactory.fromJson(inputJson);
@@ -713,6 +714,7 @@ public class CreateNoteServletTest {
             "  }\r\n" + //
             "}";
 
+    // doPost test
     @Test
     public void testCreateDuplicateNote() throws Exception {
         // Use the setup servlet and db files, do not recreate them
@@ -734,6 +736,7 @@ public class CreateNoteServletTest {
         assertTrue(resp2.getOutput().contains(noteLogName + " already exists"));
     }
 
+    // doPost test
     @Test
     public void testCreateNoteWithInvalidJson() throws Exception {
         StubHttpServletResponse resp = new StubHttpServletResponse();
@@ -747,6 +750,7 @@ public class CreateNoteServletTest {
         assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
     }
 
+    // doPost test
     @Test
     public void testCreateNoteWithEmptyTitle() throws Exception {
         Note note = NoteFactory.fromJson(inputJson);
@@ -766,6 +770,7 @@ public class CreateNoteServletTest {
         }
     }
 
+    // doPost test
     @Test
     public void testCreateNoteWithNullTags() throws Exception {
         Note note = NoteFactory.fromJson(inputJson);
@@ -783,5 +788,28 @@ public class CreateNoteServletTest {
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
             assertTrue(resp.getOutput().contains(tagLogName + " name required"));
         }
+    }
+
+    // doGet test
+    @Test
+    public void testGetNotes() throws Exception {
+        Note note = NoteFactory.fromJson(inputJson);
+        String json = gson.toJson(note);
+
+        // Crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Testa la GET
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("Esempio di nota"));
+        assertTrue(output.contains("Questo è il contenuto della nota di esempio."));
     }
 }

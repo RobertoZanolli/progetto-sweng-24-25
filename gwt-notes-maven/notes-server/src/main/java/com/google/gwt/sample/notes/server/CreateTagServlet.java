@@ -89,6 +89,7 @@ public class CreateTagServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
         out.print(json);
         out.flush();
+        resp.setStatus(HttpServletResponse.SC_OK);
     }
 
     @Override
