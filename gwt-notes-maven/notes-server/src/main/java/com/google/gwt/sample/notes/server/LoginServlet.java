@@ -3,17 +3,12 @@ package com.google.gwt.sample.notes.server;
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 
 import javax.servlet.http.*;
 import java.io.*;
 
 public class LoginServlet extends HttpServlet {
-    private DB db;
-    private HTreeMap<String, String> users;
     private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
@@ -24,13 +19,12 @@ public class LoginServlet extends HttpServlet {
     @Override
     public void init() {
         String pathToUse = dbPath != null ? dbPath : new java.io.File("users.db").getAbsolutePath();
-        
-        userDB = UserDB.getInstance(pathToUse);
+        userDB = UserDB.getInstance(new File(pathToUse));
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HTreeMap<String, String> users = userDB.getUsers();
+        HTreeMap<String, String> users = userDB.getMap();
         if (users == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write("User database not initialized");

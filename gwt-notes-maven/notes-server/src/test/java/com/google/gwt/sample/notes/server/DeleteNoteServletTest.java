@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import org.junit.After;
 import org.junit.Before;
@@ -29,33 +28,30 @@ import java.util.Map;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
-public class CreateNoteServletTest {
-    private CreateNoteServlet servlet;
-    private Gson gson = new Gson();
+public class DeleteNoteServletTest {
+    private DeleteNoteServlet servlet;
     private File tempDbFileNote;
-    private File tempDbFileTag;
-    private final String noteTableName = "notesTest";
     private final String noteLogName = "Note";
-    private final String tagTableName = "tagsTest";
-    private final String tagLogName = "Tag";
+    private final String noteTableName = "notes";
+    private String testNoteId;
 
     @Before
     public void setUp() throws IOException {
-        // Create a temporary file for the database
         tempDbFileNote = File.createTempFile(noteTableName, ".db");
         if (tempDbFileNote.exists()) {
             tempDbFileNote.delete();
         }
-        tempDbFileTag = File.createTempFile(tagTableName, ".db");
-        if (tempDbFileTag.exists()) {
-            tempDbFileTag.delete();
-        }
-        servlet = new CreateNoteServlet(tempDbFileNote, tempDbFileTag);
+        servlet = new DeleteNoteServlet(tempDbFileNote);
         servlet.init();
-        TagDB tagDB = TagDB.getInstance(tempDbFileTag);
+
+        // Nota di test
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
-        assertNotNull(noteLogName + " map should be initialized", noteDB);
-        assertNotNull(tagLogName + " map should be initialized", tagDB);
+        Note note = new Note();
+        note.setTitle("Test Note");
+        note.setContent("Content");
+        testNoteId = note.getId();
+        noteDB.getMap().put(testNoteId, note);
+        noteDB.commit();
     }
 
     @After
@@ -64,12 +60,8 @@ public class CreateNoteServletTest {
             servlet.destroy();
         }
         NoteDB.resetInstance();
-        TagDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists()) {
             tempDbFileNote.delete();
-        }
-        if (tempDbFileTag != null && tempDbFileTag.exists()) {
-            tempDbFileTag.delete();
         }
     }
 
@@ -689,99 +681,56 @@ public class CreateNoteServletTest {
     }
 
     @Test
-    public void testCreateNewNote() throws Exception {
-        Note user = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(user);
-
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        StubHttpServletResponse resp = new StubHttpServletResponse();
-
-        servlet.doPost(req, resp);
-        assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains(noteLogName + " created"));
-    }
-
-    String inputJson = "{\r\n" + //
-            "  \"title\": \"Esempio di nota\",\r\n" + //
-            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
-            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"tags\": null,\r\n" + //
-            "  \"owner\": {\r\n" + //
-            "    \"username\": \"utente_test\",\r\n" + //
-            "    \"email\": \"utente@example.com\"\r\n" + //
-            "  }\r\n" + //
-            "}";
-
-    @Test
-    public void testCreateDuplicateNote() throws Exception {
-        // Use the setup servlet and db files, do not recreate them
-        Note user = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(user);
-
-        // First creation should succeed
-        StubHttpServletRequest req1 = new StubHttpServletRequest(json);
-        StubHttpServletResponse resp1 = new StubHttpServletResponse();
-        servlet.doPost(req1, resp1);
-        assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
-        assertTrue(resp1.getOutput().contains(noteLogName + " created"));
-
-        // Second creation (duplicate) should fail with conflict
-        StubHttpServletRequest req2 = new StubHttpServletRequest(json);
-        StubHttpServletResponse resp2 = new StubHttpServletResponse();
-        servlet.doPost(req2, resp2);
-        assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains(noteLogName + " already exists"));
-    }
-
-    @Test
-    public void testCreateNoteWithInvalidJson() throws Exception {
-        StubHttpServletResponse resp = new StubHttpServletResponse();
+    public void testDeleteExistingNote() throws Exception {
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        when(req.getParameter("id")).thenReturn(testNoteId);
 
-        // Simulate IOException when getReader() is called
-        when(req.getReader()).thenThrow(new IOException("Simulated IO error"));
+        servlet.doDelete(req, resp);
 
-        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
+        assertTrue(resp.getOutput().contains(noteLogName + " with ID " + testNoteId + " deleted"));
+    }
+
+    @Test
+    public void testDeleteNonExistentNote() throws Exception {
+        StubHttpServletRequest req = mock(StubHttpServletRequest.class);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        when(req.getParameter("id")).thenReturn("non-existent-id");
+
+        servlet.doDelete(req, resp);
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
+        assertTrue(resp.getOutput().contains(noteLogName + " with ID non-existent-id not found"));
+    }
+
+    @Test
+    public void testDeleteWithoutId() throws Exception {
+        StubHttpServletRequest req = mock(StubHttpServletRequest.class);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        when(req.getParameter("id")).thenReturn(null);
+
+        servlet.doDelete(req, resp);
+
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
+        assertTrue(resp.getOutput().contains("Note ID required"));
     }
 
     @Test
-    public void testCreateNoteWithEmptyTitle() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
+    public void testDeleteWithNullDB() throws Exception {
+        // Forziamo la situazione con mappa non inizializzata
+        DeleteNoteServlet brokenServlet = new DeleteNoteServlet(new File("nonexistent.db"));
+        StubHttpServletRequest req = mock(StubHttpServletRequest.class);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        when(req.getParameter("id")).thenReturn(testNoteId);
 
-        String[] invalidTitle = { null, "" };
+        // Chiudiamo il DB per simulare la mancanza della mappa
+        brokenServlet.init();
+        NoteDB.getInstance(new File("nonexistent.db")).close();
 
-        for (String title : invalidTitle) {
-            note.setTitle(title);
-            String json = gson.toJson(note);
+        brokenServlet.doDelete(req, resp);
 
-            StubHttpServletRequest req = new StubHttpServletRequest(json);
-            StubHttpServletResponse resp = new StubHttpServletResponse();
-
-            servlet.doPost(req, resp);
-            assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-            assertTrue(resp.getOutput().contains("Title required"));
-        }
-    }
-
-    @Test
-    public void testCreateNoteWithNullTags() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
-
-        String[] invalidTags = { null, "" };
-
-        for (String tag : invalidTags) {
-            note.setTags(new String[] { tag });
-            String json = gson.toJson(note);
-
-            StubHttpServletRequest req = new StubHttpServletRequest(json);
-            StubHttpServletResponse resp = new StubHttpServletResponse();
-
-            servlet.doPost(req, resp);
-            assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-            assertTrue(resp.getOutput().contains(tagLogName + " name required"));
-        }
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
+        assertTrue(resp.getOutput().contains(noteTableName + " database not initialized"));
     }
 }
