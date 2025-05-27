@@ -13,7 +13,6 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
-import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
@@ -135,65 +134,14 @@ public class ViewNotesPanel extends Composite {
 
     // Aggiunge le note alla lista
     public void getNotes() {
-        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
-                GWT.getHostPageBaseURL() + "api/notes");
-        builder.setHeader("Content-Type", "application/json");
-        try {
-            builder.setCallback(new RequestCallback() {
-                @Override
-                public void onResponseReceived(Request request, Response response) {
-                    if (response.getStatusCode() == Response.SC_OK) {
-                        String json = response.getText();
-                        notes = parseNotesJson(json);
-                        filteredNotes = new ArrayList<>(notes);
-                        renderNotes();
-                    } else {
-                        feedbackLabel.setText("Error fetching notes: " + response.getText());
-                    }
-                }
-
-                @Override
-                public void onError(Request request, Throwable exception) {
-                    feedbackLabel.setText("Error: " + exception.getMessage());
-                }
-            });
-            builder.send();
-        } catch (RequestException e) {
-            feedbackLabel.setText("Request error: " + e.getMessage());
-        }
+        // ToDo
     }
 
     private List<Note> parseNotesJson(String json) {
         List<Note> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(json);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue obj = array.get(i);
-                JSONObject noteObj = obj.isObject();
-                if (noteObj != null) {
-                    Note note = new Note();
-                    JSONValue titleValue = noteObj.get("title");
-                    if (titleValue != null && titleValue.isString() != null) {
-                        note.setTitle(titleValue.isString().stringValue());
-                    }
-                    JSONValue contentValue = noteObj.get("content");
-                    if (contentValue != null && contentValue.isString() != null) {
-                        note.setContent(contentValue.isString().stringValue());
-                    }
-                    JSONValue tagsValue = noteObj.get("tags");
-                    if (tagsValue != null && tagsValue.isArray() != null) {
-                        JSONArray tagsArray = tagsValue.isArray();
-                        String[] tags = new String[tagsArray.size()];
-                        for (int j = 0; j < tagsArray.size(); j++) {
-                            tags[j] = tagsArray.get(j).isString().stringValue();
-                        }
-                        note.setTags(tags);
-                    }
-                    result.add(note);
-                }
-            }
-        }
+        
+        // ToDo
+
         return result;
     }
 
