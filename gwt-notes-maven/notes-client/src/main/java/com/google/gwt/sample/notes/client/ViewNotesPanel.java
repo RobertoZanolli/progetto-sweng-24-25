@@ -14,6 +14,7 @@ import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.User;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -21,6 +22,11 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.i18n.client.DateTimeFormat;
+
+
+
 
 public class ViewNotesPanel extends Composite {
 
@@ -110,40 +116,155 @@ public class ViewNotesPanel extends Composite {
     }
 
     // Mostra correttamente le note
-    private void renderNotes() {
-        // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
-        if (panel.getWidgetCount() > 4) {
-            // Tieni solo i primi 4 widget (searchPanel, tagPanel, buttonPanel e feedbackLabel)
-            while (panel.getWidgetCount() > 4) {
-                panel.remove(4);
-            }
-        }
-
-        // Aggiungo note filtrate
-        for (Note note : filteredNotes) {
-            HorizontalPanel notePanel = new HorizontalPanel();
-            Label noteLabel = new Label(note.getTitle() + " by " + note.getOwner().getEmail());
-            Label createdAtLabel = new Label(note.getCreatedDate().toString());
-            Button noteDetailButton = new Button("Vedi nota");
-            notePanel.add(noteLabel);
-            notePanel.add(createdAtLabel);
-            notePanel.add(noteDetailButton);
-            panel.add(notePanel);
+private void renderNotes() {
+    // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
+    if (panel.getWidgetCount() > 4) {
+        while (panel.getWidgetCount() > 4) {
+            panel.remove(4);
         }
     }
+
+    // Aggiungo note filtrate
+    for (Note note : filteredNotes) {
+        VerticalPanel notePanel = new VerticalPanel(); // Usa VerticalPanel per una migliore disposizione
+        notePanel.setSpacing(5);
+
+        // Titolo
+        Label titleLabel = new Label("Titolo: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
+        notePanel.add(titleLabel);
+
+        // Contenuto
+        Label contentLabel = new Label("Contenuto: " + (note.getContent() != null ? note.getContent() : "N/A"));
+        notePanel.add(contentLabel);
+
+        // Tag
+        String tags = note.getTags() != null && note.getTags().length > 0 
+            ? String.join(", ", note.getTags()) : "Nessun tag";
+        Label tagsLabel = new Label("Tag: " + tags);
+        notePanel.add(tagsLabel);
+
+        // CreatedDate
+        Label createdAtLabel = new Label("Creato: " + (note.getCreatedDate() != null ? note.getCreatedDate().toString() : "Data non disponibile"));
+        notePanel.add(createdAtLabel);
+
+        // LastModifiedDate
+        Label lastModifiedLabel = new Label("Ultima modifica: " + (note.getLastModifiedDate() != null ? note.getLastModifiedDate().toString() : "Data non disponibile"));
+        notePanel.add(lastModifiedLabel);
+
+
+        // Bottone per i dettagli
+        Button noteDetailButton = new Button("Vedi nota");
+        notePanel.add(noteDetailButton);
+
+        panel.add(notePanel);
+    }
+}
 
     // Aggiunge le note alla lista
     public void getNotes() {
-        // ToDo
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
+                GWT.getHostPageBaseURL() + "notes");
+        builder.setHeader("Content-Type", "application/json");
+
+        try {
+            builder.sendRequest(null, new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        notes = parseNotesJson(json);
+                        filteredNotes = new ArrayList<>(notes);
+                        renderNotes();
+                    } else {
+                        feedbackLabel.setText("Errore nel recupero delle note: " + response.getStatusText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Errore durante la richiesta: " + exception.getMessage());
+                }
+            });
+        } catch (RequestException e) {
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+        }
     }
 
-    private List<Note> parseNotesJson(String json) {
-        List<Note> result = new ArrayList<>();
-        
-        // ToDo
 
+private List<Note> parseNotesJson(String json) {
+    List<Note> result = new ArrayList<>();
+    JSONValue value = JSONParser.parseStrict(json);
+    JSONArray array = value.isArray();
+
+    if (array == null) {
+        feedbackLabel.setText("Errore: risposta JSON non valida");
         return result;
     }
+
+    // Formato per "May 23, 2025, 12:18:33 PM" (con non-breaking space)
+    DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
+
+    for (int i = 0; i < array.size(); i++) {
+        JSONValue noteVal = array.get(i);
+        if (noteVal != null && noteVal.isObject() != null) {
+            JSONObject obj = noteVal.isObject();
+            Note note = new Note();
+
+            // Title
+            if (obj.containsKey("title") && obj.get("title").isString() != null) {
+                note.setTitle(obj.get("title").isString().stringValue());
+            }
+
+            // Content
+            if (obj.containsKey("content") && obj.get("content").isString() != null) {
+                note.setContent(obj.get("content").isString().stringValue());
+            }
+
+            // CreatedDate
+            if (obj.containsKey("createdDate") && obj.get("createdDate").isString() != null) {
+                try {
+                    String dateStr = obj.get("createdDate").isString().stringValue();
+                    // Sostituisci non-breaking space con spazio normale
+                    dateStr = dateStr.replace("\u202f", " ");
+                    note.setCreatedDate(dateFormat.parse(dateStr));
+                } catch (IllegalArgumentException e) {
+                    GWT.log("Errore parsing createdDate: " + e.getMessage() + " per la stringa: " + obj.get("createdDate").isString().stringValue());
+                }
+            }
+
+            // LastModifiedDate
+            if (obj.containsKey("lastModifiedDate") && obj.get("lastModifiedDate").isString() != null) {
+                try {
+                    String dateStr = obj.get("lastModifiedDate").isString().stringValue();
+                    // Sostituisci non-breaking space con spazio normale
+                    dateStr = dateStr.replace("\u202f", " ");
+                    note.setLastModifiedDate(dateFormat.parse(dateStr));
+                } catch (IllegalArgumentException e) {
+                    GWT.log("Errore parsing lastModifiedDate: " + e.getMessage() + " per la stringa: " + obj.get("lastModifiedDate").isString().stringValue());
+                }
+            }
+
+            // Tags
+            if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
+                JSONArray tagsArray = obj.get("tags").isArray();
+                String[] tags = new String[tagsArray.size()];
+                for (int t = 0; t < tagsArray.size(); t++) {
+                    if (tagsArray.get(t).isString() != null) {
+                        tags[t] = tagsArray.get(t).isString().stringValue();
+                    } else {
+                        tags[t] = "";
+                    }
+                }
+                note.setTags(tags);
+            }
+
+            
+            result.add(note);
+        }
+    }
+
+    return result;
+}
 
     // Aggiunge i tag alla list box
     private void getTags() {

@@ -6,9 +6,11 @@ import com.google.gwt.sample.notes.shared.Tag;
 
 import org.mapdb.HTreeMap;
 
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
 
+@WebServlet("/notes")
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
     private File dbFileTag = null;
@@ -115,23 +117,30 @@ public class NoteServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
+
         if (noteMap == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(noteTableName + " database not initialized");
+            resp.getWriter().write("Notes database not initialized.");
             return;
         }
 
+        // Prepara risposta JSON
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        // Converti le note in JSON usando Gson
-        String json = new Gson().toJson(noteMap.values());
+        // Usa Gson per convertire la collezione di note in JSON
+        Gson gson = new Gson();
+        String json = gson.toJson(noteMap.values());
 
+        // Scrivi nella risposta
         PrintWriter out = resp.getWriter();
         out.print(json);
         out.flush();
+
+        // Imposta stato OK
         resp.setStatus(HttpServletResponse.SC_OK);
     }
+
 
     @Override
     public void destroy() {
