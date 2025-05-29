@@ -91,12 +91,12 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
-        // verifico se i tag esistono
+        // Verifico se i tag esistono
         if (note.getTags() != null) {
             for (String tag : note.getTags()) {
                 if (tag == null || tag.isEmpty()) {
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    resp.getWriter().write(tagLogName+" name required");
+                    resp.getWriter().write(tagLogName + " name required");
                     return;
                 }
                 if (!tagMap.containsKey(tag)) {
@@ -139,6 +139,38 @@ public class NoteServlet extends HttpServlet {
 
         // Imposta stato OK
         resp.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        this.noteDB = NoteDB.getInstance(this.dbFileNote);
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
+
+        if (noteMap == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(noteTableName + " database not initialized");
+            return;
+        }
+
+        String noteId = req.getParameter("id");
+        if (noteId == null || noteId.isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Note ID required");
+            return;
+        }
+
+        if (!noteMap.containsKey(noteId)) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write(noteLogName + " with ID " + noteId + " not found");
+            return;
+        }
+
+        noteMap.remove(noteId);
+        this.noteDB.commit();
+        this.noteDB.close();
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.getWriter().write(noteLogName + " with ID " + noteId + " deleted");
     }
 
 

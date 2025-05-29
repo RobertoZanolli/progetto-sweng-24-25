@@ -48,6 +48,9 @@ public class RegisterServletTest {
         String dbPath = tempDbFile.getAbsolutePath();
         servlet = new RegisterServlet(dbPath);
         servlet.init();
+        
+        assertNotNull("UserDB should be initialized", UserDB.getInstance(tempDbFile));
+        assertNotNull("UserDB map should be initialized", UserDB.getInstance(tempDbFile).getMap());
     }
 
     @After

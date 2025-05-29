@@ -188,7 +188,7 @@ public class CreateNotePanel extends Composite {
 
     private void updateTagList(Boolean exists, String newTag) {
         if (!exists) {
-            // Usiamo l'indice come valore, ma potresti usare un UUID o il testo stesso
+            // Usiamo l'indice come valore, ma si può usare anche un UUID o il testo stesso
             tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
             newTagBox.setText("");
         } else {

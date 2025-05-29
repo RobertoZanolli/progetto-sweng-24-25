@@ -47,7 +47,9 @@ public class TagServletTest {
         servlet = new TagServlet(tempFile);
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempFile);
+        
         assertNotNull(logName + " DB should be initialized", tagDB);
+        assertNotNull(logName + " map should be initialized", tagDB.getMap());
     }
 
     @After

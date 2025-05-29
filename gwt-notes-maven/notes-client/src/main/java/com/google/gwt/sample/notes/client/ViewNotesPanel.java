@@ -166,7 +166,7 @@ public class ViewNotesPanel extends Composite {
             notePanel.add(tagsLabel);
 
             // CreatedDate
-            Label createdAtLabel = new Label("Creato: " + (note.getCreatedDate() != null ? note.getCreatedDate().toString() : "Data non disponibile"));
+            Label createdAtLabel = new Label("Creata: " + (note.getCreatedDate() != null ? note.getCreatedDate().toString() : "Data non disponibile"));
             notePanel.add(createdAtLabel);
 
             // LastModifiedDate

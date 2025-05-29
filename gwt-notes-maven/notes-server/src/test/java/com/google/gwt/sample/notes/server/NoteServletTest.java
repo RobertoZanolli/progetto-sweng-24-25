@@ -55,8 +55,11 @@ public class NoteServletTest {
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempDbFileTag);
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
-        assertNotNull(noteLogName + " map should be initialized", noteDB);
-        assertNotNull(tagLogName + " map should be initialized", tagDB);
+
+        assertNotNull("TagDB should be initialized", tagDB);
+        assertNotNull("NoteDB should be initialized", noteDB);
+        assertNotNull(noteLogName + " map should be initialized", noteDB.getMap());
+        assertNotNull(tagLogName + " map should be initialized", tagDB.getMap());
     }
 
     @After
@@ -715,7 +718,6 @@ public class NoteServletTest {
             "  }\r\n" + //
             "}";
 
-    // doPost test
     @Test
     public void testCreateDuplicateNote() throws Exception {
         // Use the setup servlet and db files, do not recreate them
@@ -737,7 +739,6 @@ public class NoteServletTest {
         assertTrue(resp2.getOutput().contains(noteLogName + " already exists"));
     }
 
-    // doPost test
     @Test
     public void testCreateNoteWithInvalidJson() throws Exception {
         StubHttpServletResponse resp = new StubHttpServletResponse();
@@ -751,7 +752,6 @@ public class NoteServletTest {
         assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
     }
 
-    // doPost test
     @Test
     public void testCreateNoteWithEmptyTitle() throws Exception {
         Note note = NoteFactory.fromJson(inputJson);
@@ -771,7 +771,6 @@ public class NoteServletTest {
         }
     }
 
-    // doPost test
     @Test
     public void testCreateNoteWithNullTags() throws Exception {
         Note note = NoteFactory.fromJson(inputJson);
@@ -812,5 +811,54 @@ public class NoteServletTest {
         String output = getResp.getOutput();
         assertTrue(output.contains("Esempio di nota"));
         assertTrue(output.contains("Questo è il contenuto della nota di esempio."));
+    }
+
+    // doDelete test
+    @Test
+    public void testDeleteExistingNote() throws Exception {
+        Note note = NoteFactory.fromJson(inputJson);
+        String json = gson.toJson(note);
+
+        // Crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // DELETE con id corretto
+        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
+        when(deleteReq.getParameter("id")).thenReturn(note.getId());
+
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+
+        assertEquals(HttpServletResponse.SC_OK, deleteResp.getStatus());
+        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID " + note.getId() + " deleted"));
+    }
+
+    @Test
+    public void testDeleteNonExistingNote() throws Exception {
+        // DELETE con id inesistente
+        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
+        when(deleteReq.getParameter("id")).thenReturn("nonexistentId");
+
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, deleteResp.getStatus());
+        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID " + "nonexistentId" + " not found"));
+    }
+
+    @Test
+    public void testDeleteWithoutId() throws Exception {
+        // DELETE senza id
+        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
+        when(deleteReq.getParameter("id")).thenReturn(null);
+
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, deleteResp.getStatus());
+        assertTrue(deleteResp.getOutput().contains("Note ID required"));
     }
 }
