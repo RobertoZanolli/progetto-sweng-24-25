@@ -76,7 +76,6 @@ public class NoteDetailPanel extends Composite {
     }
 
     private void setupHandlers() {
-        // TO DO 
         backButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new ViewNotesPanel());

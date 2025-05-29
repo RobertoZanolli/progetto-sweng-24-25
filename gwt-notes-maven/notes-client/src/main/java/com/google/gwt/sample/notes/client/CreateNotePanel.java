@@ -58,7 +58,7 @@ public class CreateNotePanel extends Composite {
         panel.add(contentBox);
         panel.add(charCountLabel);
 
-        panel.add(new Label("Tag (Ctrl+Click per selezione multipla):"));
+        panel.add(new Label("Tag (usa 'Ctrl+Click' per selezione multipla):"));
 
         getTags();
         panel.add(tagListBox);

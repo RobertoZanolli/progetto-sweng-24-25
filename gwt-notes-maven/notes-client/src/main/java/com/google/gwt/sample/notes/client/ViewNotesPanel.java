@@ -14,9 +14,9 @@ import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.User;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
@@ -29,27 +29,25 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 
 
 public class ViewNotesPanel extends Composite {
-
-    private VerticalPanel panel = new VerticalPanel();
+    private final VerticalPanel panel = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
     private List<Note> filteredNotes = new ArrayList<>();
     private final Label feedbackLabel = new Label();
-    private TextBox searchBox = new TextBox();
-    private Button createNoteButton = new Button("Nuova Nota");
-    private Button createTagButton = new Button("Nuovo Tag");
+    private final TextBox searchBox = new TextBox();
+    private final Button createNoteButton = new Button("Nuova Nota");
+    private final Button createTagButton = new Button("Nuovo Tag");
+    private final Button exitButton = new Button("Esci");
     
     @SuppressWarnings("deprecation")
-    private ListBox tagListBox = new ListBox(true);
-
-    private Button searchButton = new Button("Filtra");
-    private Button exitButton = new Button("Esci");
+    private final ListBox tagListBox = new ListBox(true);
 
     public ViewNotesPanel() {
         initWidget(panel);
-        setupUI();
+        buildUI();
+        setupHandlers();
     }
 
-    private void setupUI() {
+    private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
         searchPanel.setSpacing(10);
@@ -61,7 +59,7 @@ public class ViewNotesPanel extends Composite {
         // Sezione di ricerca per tag
         HorizontalPanel tagPanel = new HorizontalPanel();
         tagPanel.setSpacing(10);
-        tagPanel.add(new Label("Cerca per tag (Ctrl+Click per selezione multipla): "));
+        tagPanel.add(new Label("Cerca per tag (usa 'Ctrl + Click' per selezione multipla): "));
         getTags();
         tagPanel.add(tagListBox);
         panel.add(tagPanel);
@@ -71,37 +69,32 @@ public class ViewNotesPanel extends Composite {
         // Bottone per la navigazione
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
-        buttonPanel.add(searchButton);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(createTagButton);
         buttonPanel.add(exitButton);
         panel.add(feedbackLabel);
         panel.add(buttonPanel);
+    }
 
-
-        // Gestione evento ricerca (filtra lista note)
+    private void setupHandlers() {
+        // Gestione evento ricerca (filtra lista note per parola chiave)
         searchBox.addKeyUpHandler(event -> {
-            String filter = searchBox.getText().toLowerCase();
-            filteredNotes = notes.stream()
-                .filter(n -> n.getTitle().toLowerCase().contains(filter) ||
-                             n.getContent().toLowerCase().contains(filter))
-                .collect(Collectors.toList());
+            filterByKeyWord();
             renderNotes();
         });
-        // Oppure con bottone
-        searchButton.addClickHandler(event -> {
-            // ToDo
-        });
 
-        // Bottone per creare nuova nota (qui puoi collegare la logica di navigazione)
+        // Gestione evento selezione tag (filtra lista note per tag)
+        tagListBox.addChangeHandler(event -> {
+            filterByTag();
+            renderNotes();
+        });
+        
         createNoteButton.addClickHandler(event -> {
-            // Ad esempio, puoi rimuovere questa view e aggiungere CreateNotePanel
             panel.clear();
             panel.add(new CreateNotePanel());
         });
 
         createTagButton.addClickHandler(event -> {
-            // Simile al bottone sopra, cambia pannello o mostra dialog
             panel.clear();
             panel.add(new CreateTagPanel());
         });
@@ -115,7 +108,39 @@ public class ViewNotesPanel extends Composite {
         });
     }
 
-    // Mostra correttamente le note
+    private void filterByTag() {
+        List<String> selectedTags = new ArrayList<>();
+        for (int i = 0; i < tagListBox.getItemCount(); i++) {
+            if (tagListBox.isItemSelected(i)) {
+                selectedTags.add(tagListBox.getItemText(i).toLowerCase());
+            }
+        }
+
+        filteredNotes = notes.stream()
+            .filter(n -> {
+                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                for (String tag : noteTags) {
+                    if (selectedTags.contains(tag.toLowerCase())) {
+                        return true;
+                    }
+                }
+                return selectedTags.isEmpty();
+            })
+            .collect(Collectors.toList());
+    }
+
+    private void filterByKeyWord() {
+        String keyWord = searchBox.getText().toLowerCase();
+        filteredNotes = notes.stream()
+            .filter(n -> {
+                String title = n.getTitle() != null ? n.getTitle().toLowerCase() : "";
+                String content = n.getContent() != null ? n.getContent().toLowerCase() : "";
+                return title.contains(keyWord) || content.contains(keyWord);
+            })
+            .collect(Collectors.toList());
+    }
+
+    // Mostra le note filtrate
     private void renderNotes() {
         // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
         if (panel.getWidgetCount() > 4) {
@@ -148,7 +173,6 @@ public class ViewNotesPanel extends Composite {
             Label lastModifiedLabel = new Label("Ultima modifica: " + (note.getLastModifiedDate() != null ? note.getLastModifiedDate().toString() : "Data non disponibile"));
             notePanel.add(lastModifiedLabel);
 
-
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
             noteDetailButton.addClickHandler(event -> {
@@ -158,6 +182,10 @@ public class ViewNotesPanel extends Composite {
             notePanel.add(noteDetailButton);
 
             panel.add(notePanel);
+
+            // Divisore tra le note
+            HTMLPanel divider = new HTMLPanel("<hr>");
+            panel.add(divider);
         }
     }
 
