@@ -1,8 +1,6 @@
 package com.google.gwt.sample.notes.client;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.http.client.*;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
@@ -16,6 +14,11 @@ public class RegistrationPanel extends VerticalPanel {
     private final Button backButton = new Button("Indietro");
 
     public RegistrationPanel() {
+        buildUI();
+        setupHandlers();
+    }
+
+    private void buildUI() {
         setSpacing(10);
         add(new Label("Registrazione"));
         add(new Label("Email:"));
@@ -25,12 +28,11 @@ public class RegistrationPanel extends VerticalPanel {
         add(registerButton);
         add(feedbackLabel);
         add(backButton);
+    }
 
-        registerButton.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent event) {
-                doRegister();
-            }
+    private void setupHandlers() {
+        registerButton.addClickHandler(event -> {
+            doRegister();
         });
 
         backButton.addClickHandler(event -> {

@@ -16,33 +16,35 @@ import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.i18n.client.DateTimeFormat;
 
 public class ViewNotesPanel extends Composite {
-
-    private VerticalPanel panel = new VerticalPanel();
+    private final VerticalPanel panel = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
     private List<Note> filteredNotes = new ArrayList<>();
-
     private final Label feedbackLabel = new Label();
-    private TextBox searchBox = new TextBox();
-    private Button createNoteButton = new Button("Nuova Nota");
-    private Button createTagButton = new Button("Nuovo Tag");
-    private ListBox tagListBox = new ListBox(true);
-    private Button searchButton = new Button("Cerca");
-    private Button exitButton = new Button("Esci");
+    private final TextBox searchBox = new TextBox();
+    private final Button createNoteButton = new Button("Nuova Nota");
+    private final Button createTagButton = new Button("Nuovo Tag");
+    private final Button exitButton = new Button("Esci");
+    
+    @SuppressWarnings("deprecation")
+    private final ListBox tagListBox = new ListBox(true);
 
     public ViewNotesPanel() {
         initWidget(panel);
-        setupUI();
-        renderNotes();
+        buildUI();
+        setupHandlers();
     }
 
-    private void setupUI() {
+    private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
         searchPanel.setSpacing(10);
@@ -54,44 +56,42 @@ public class ViewNotesPanel extends Composite {
         // Sezione di ricerca per tag
         HorizontalPanel tagPanel = new HorizontalPanel();
         tagPanel.setSpacing(10);
-        tagPanel.add(new Label("Cerca per tag (Ctrl+Click per selezione multipla): "));
+        tagPanel.add(new Label("Cerca per tag (usa 'Ctrl + Click' per selezione multipla): "));
+        getTags();
         tagPanel.add(tagListBox);
-        getTag();
         panel.add(tagPanel);
+
+        getNotes();
 
         // Bottone per la navigazione
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
-        buttonPanel.add(searchButton);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(createTagButton);
         buttonPanel.add(exitButton);
         panel.add(feedbackLabel);
         panel.add(buttonPanel);
+    }
 
-        // Gestione evento ricerca (filtra lista note)
+    private void setupHandlers() {
+        // Gestione evento ricerca (filtra lista note per parola chiave)
         searchBox.addKeyUpHandler(event -> {
-            String filter = searchBox.getText().toLowerCase();
-            filteredNotes = notes.stream()
-                .filter(n -> n.getTitle().toLowerCase().contains(filter) ||
-                             n.getContent().toLowerCase().contains(filter))
-                .collect(Collectors.toList());
+            filterByKeyWord();
             renderNotes();
         });
-        // Oppure con bottone
-        searchButton.addClickHandler(event -> {
-            // ToDo
-        });
 
-        // Bottone per creare nuova nota (qui puoi collegare la logica di navigazione)
+        // Gestione evento selezione tag (filtra lista note per tag)
+        tagListBox.addChangeHandler(event -> {
+            filterByTag();
+            renderNotes();
+        });
+        
         createNoteButton.addClickHandler(event -> {
-            // Ad esempio, puoi rimuovere questa view e aggiungere CreateNotePanel
             panel.clear();
             panel.add(new CreateNotePanel());
         });
 
         createTagButton.addClickHandler(event -> {
-            // Simile al bottone sopra, cambia pannello o mostra dialog
             panel.clear();
             panel.add(new CreateTagPanel());
         });
@@ -99,30 +99,201 @@ public class ViewNotesPanel extends Composite {
         exitButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new HomePanel());
+            /*
+             * ToDo: eseguire il logout (eliminare dati di sessione)
+             */
         });
     }
 
+    private void filterByTag() {
+        List<String> selectedTags = new ArrayList<>();
+        for (int i = 0; i < tagListBox.getItemCount(); i++) {
+            if (tagListBox.isItemSelected(i)) {
+                selectedTags.add(tagListBox.getItemText(i).toLowerCase());
+            }
+        }
+
+        filteredNotes = notes.stream()
+            .filter(n -> {
+                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                for (String tag : noteTags) {
+                    if (selectedTags.contains(tag.toLowerCase())) {
+                        return true;
+                    }
+                }
+                return selectedTags.isEmpty();
+            })
+            .collect(Collectors.toList());
+    }
+
+    private void filterByKeyWord() {
+        String keyWord = searchBox.getText().toLowerCase();
+        filteredNotes = notes.stream()
+            .filter(n -> {
+                String title = n.getTitle() != null ? n.getTitle().toLowerCase() : "";
+                String content = n.getContent() != null ? n.getContent().toLowerCase() : "";
+                return title.contains(keyWord) || content.contains(keyWord);
+            })
+            .collect(Collectors.toList());
+    }
+
+    // Mostra le note filtrate
     private void renderNotes() {
-        // Rimuovo precedenti note, ma mantengo barra e bottoni
+        // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
         if (panel.getWidgetCount() > 4) {
-            // Tieni solo i primi 4 widget (searchPanel, tagPanel, buttonPanel e feedbackLabel)
             while (panel.getWidgetCount() > 4) {
                 panel.remove(4);
             }
         }
+
+        // Aggiungo note filtrate
+        for (Note note : filteredNotes) {
+            VerticalPanel notePanel = new VerticalPanel();
+            notePanel.setSpacing(5);
+
+            Label titleLabel = new Label("Titolo: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
+            notePanel.add(titleLabel);
+
+            Label contentLabel = new Label("Contenuto: " + (note.getContent() != null ? note.getContent() : "N/A"));
+            notePanel.add(contentLabel);
+
+            String tags = note.getTags() != null && note.getTags().length > 0 
+                ? String.join(", ", note.getTags()) : "Nessun tag";
+            Label tagsLabel = new Label("Tag: " + tags);
+            notePanel.add(tagsLabel);
+
+            // CreatedDate
+            Label createdAtLabel = new Label("Creata: " + (note.getCreatedDate() != null ? note.getCreatedDate().toString() : "Data non disponibile"));
+            notePanel.add(createdAtLabel);
+
+            // LastModifiedDate
+            Label lastModifiedLabel = new Label("Ultima modifica: " + (note.getLastModifiedDate() != null ? note.getLastModifiedDate().toString() : "Data non disponibile"));
+            notePanel.add(lastModifiedLabel);
+
+            // Bottone per i dettagli
+            Button noteDetailButton = new Button("Vedi nota");
+            noteDetailButton.addClickHandler(event -> {
+                panel.clear();
+                panel.add(new NoteDetailPanel(note));
+            });
+            notePanel.add(noteDetailButton);
+
+            panel.add(notePanel);
+
+            // Divisore tra le note
+            HTMLPanel divider = new HTMLPanel("<hr>");
+            panel.add(divider);
+        }
     }
 
-    // Per aggiornare la lista note (ad esempio dopo creazione/modifica)
-    public void setNotes(List<Note> notes) {
-        this.notes = notes;
-        this.filteredNotes = new ArrayList<>(notes);
-        renderNotes();
+    // Aggiunge le note alla lista
+    public void getNotes() {
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
+                GWT.getHostPageBaseURL() + "notes");
+        builder.setHeader("Content-Type", "application/json");
+
+        try {
+            builder.sendRequest(null, new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        notes = parseNotesJson(json);
+                        filteredNotes = new ArrayList<>(notes);
+                        renderNotes();
+                    } else {
+                        feedbackLabel.setText("Errore nel recupero delle note: " + response.getStatusText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Errore durante la richiesta: " + exception.getMessage());
+                }
+            });
+        } catch (RequestException e) {
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+        }
+    }
+
+    private List<Note> parseNotesJson(String json) {
+        List<Note> result = new ArrayList<>();
+        JSONValue value = JSONParser.parseStrict(json);
+        JSONArray array = value.isArray();
+
+        if (array == null) {
+            feedbackLabel.setText("Errore: risposta JSON non valida");
+            return result;
+        }
+
+        DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
+
+        for (int i = 0; i < array.size(); i++) {
+            JSONValue noteVal = array.get(i);
+            if (noteVal != null && noteVal.isObject() != null) {
+                JSONObject obj = noteVal.isObject();
+                Note note = new Note(obj.get("id").isString().stringValue());
+
+                // Title
+                if (obj.containsKey("title") && obj.get("title").isString() != null) {
+                    note.setTitle(obj.get("title").isString().stringValue());
+                }
+
+                // Content
+                if (obj.containsKey("content") && obj.get("content").isString() != null) {
+                    note.setContent(obj.get("content").isString().stringValue());
+                }
+
+                // CreatedDate
+                if (obj.containsKey("createdDate") && obj.get("createdDate").isString() != null) {
+                    try {
+                        String dateStr = obj.get("createdDate").isString().stringValue();
+                        // Sostituisci non-breaking space con spazio normale
+                        dateStr = dateStr.replace("\u202f", " ");
+                        note.setCreatedDate(dateFormat.parse(dateStr));
+                    } catch (IllegalArgumentException e) {
+                        GWT.log("Errore parsing createdDate: " + e.getMessage() + " per la stringa: " + obj.get("createdDate").isString().stringValue());
+                    }
+                }
+
+                // LastModifiedDate
+                if (obj.containsKey("lastModifiedDate") && obj.get("lastModifiedDate").isString() != null) {
+                    try {
+                        String dateStr = obj.get("lastModifiedDate").isString().stringValue();
+                        // Sostituisci non-breaking space con spazio normale
+                        dateStr = dateStr.replace("\u202f", " ");
+                        note.setLastModifiedDate(dateFormat.parse(dateStr));
+                    } catch (IllegalArgumentException e) {
+                        GWT.log("Errore parsing lastModifiedDate: " + e.getMessage() + " per la stringa: " + obj.get("lastModifiedDate").isString().stringValue());
+                    }
+                }
+
+                // Tags
+                if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
+                    JSONArray tagsArray = obj.get("tags").isArray();
+                    String[] tags = new String[tagsArray.size()];
+                    for (int t = 0; t < tagsArray.size(); t++) {
+                        if (tagsArray.get(t).isString() != null) {
+                            tags[t] = tagsArray.get(t).isString().stringValue();
+                        } else {
+                            tags[t] = "";
+                        }
+                    }
+                    note.setTags(tags);
+                }
+
+                
+                result.add(note);
+            }
+        }
+
+        return result;
     }
 
     // Aggiunge i tag alla list box
-    private void getTag() {
+    private void getTags() {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
-                GWT.getHostPageBaseURL() + "createTag");
+                GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
         try {
             builder.setCallback(new RequestCallback() {
@@ -130,7 +301,7 @@ public class ViewNotesPanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        List<String> tags = parseJsonArray(json);
+                        List<String> tags = parseTagsJson(json);
 
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
@@ -151,7 +322,7 @@ public class ViewNotesPanel extends Composite {
         }
     }
 
-    public List<String> parseJsonArray(String jsonString) {
+    public List<String> parseTagsJson(String jsonString) {
         List<String> result = new ArrayList<>();
         JSONValue value = JSONParser.parseStrict(jsonString);
         JSONArray array = value.isArray();

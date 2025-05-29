@@ -8,16 +8,19 @@ public class HomePanel extends VerticalPanel {
     private final Button registerButton = new Button("Registrati");
 
     public HomePanel() {
-        setupUI();
+        buildUI();
+        setupHandlers();
     }
 
-    private void setupUI() {
+    private void buildUI() {
         setSpacing(10);
         add(new Label("Benvenuto!"));
         add(loginButton);
         add(registerButton);
         add(feedbackLabel);
+    }
 
+    private void setupHandlers() {
         loginButton.addClickHandler(event -> {
             RootPanel.get("mainPanel").clear();
             RootPanel.get("mainPanel").add(new LoginPanel());

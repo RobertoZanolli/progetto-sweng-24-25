@@ -1,8 +1,6 @@
 package com.google.gwt.sample.notes.client;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.http.client.*;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
@@ -16,6 +14,11 @@ public class LoginPanel extends VerticalPanel {
     private final Button backButton = new Button("Indietro");
 
     public LoginPanel() {
+        buildUI();
+        setupHandlers();
+    }
+
+    private void buildUI() {
         setSpacing(10);
         add(new Label("Accesso"));
         add(new Label("Email:"));
@@ -25,12 +28,11 @@ public class LoginPanel extends VerticalPanel {
         add(loginButton);
         add(feedbackLabel);
         add(backButton);
+    }
 
-        loginButton.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent event) {
-                doLogin();
-            }
+    private void setupHandlers() {
+        loginButton.addClickHandler(event -> {
+            doLogin();
         });
 
         backButton.addClickHandler(event -> {

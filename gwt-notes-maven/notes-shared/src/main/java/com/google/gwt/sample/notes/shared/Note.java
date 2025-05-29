@@ -4,7 +4,8 @@ import java.util.Date;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class Note implements Serializable{
+public class Note implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String id;
     private String title;
     private String content;
@@ -17,6 +18,10 @@ public class Note implements Serializable{
         NoteIdGenerator generator = new NoteIdGenerator(1);
         long id = generator.nextId();
         this.id = Long.toString(id); 
+    }
+
+    public Note(String id) {
+        this.id = id;
     }
 
     // Getters e Setters (obbligatori per Gson + POJO style)

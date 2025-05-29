@@ -2,7 +2,6 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.User;
-import com.password4j.Password;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,6 +48,9 @@ public class RegisterServletTest {
         String dbPath = tempDbFile.getAbsolutePath();
         servlet = new RegisterServlet(dbPath);
         servlet.init();
+        
+        assertNotNull("UserDB should be initialized", UserDB.getInstance(tempDbFile));
+        assertNotNull("UserDB map should be initialized", UserDB.getInstance(tempDbFile).getMap());
     }
 
     @After

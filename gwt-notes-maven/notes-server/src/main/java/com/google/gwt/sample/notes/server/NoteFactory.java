@@ -1,7 +1,8 @@
 package com.google.gwt.sample.notes.server;
+
+import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.User;
-import com.google.gson.Gson;
 
 import java.util.Date;
 
@@ -11,6 +12,19 @@ public class NoteFactory {
     // Factory method standard
     public static Note create(String title, String content, String[] tags, User owner) {
         Note note = new Note();
+        note.setTitle(title);
+        note.setContent(content);
+        note.setTags(tags);
+        note.setOwner(owner);
+        Date now = new Date();
+        note.setCreatedDate(now);
+        note.setLastModifiedDate(now);
+        return note;
+    }
+
+    // Factory method con id
+    public static Note create(String id, String title, String content, String[] tags, User owner) {
+        Note note = new Note(id);
         note.setTitle(title);
         note.setContent(content);
         note.setTags(tags);

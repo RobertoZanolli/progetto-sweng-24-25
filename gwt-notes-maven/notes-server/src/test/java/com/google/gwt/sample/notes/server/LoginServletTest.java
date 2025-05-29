@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("deprecation")
 public class LoginServletTest {
     private LoginServlet servlet;
     private Gson gson = new Gson();
@@ -55,7 +56,10 @@ public class LoginServletTest {
         servlet.init();
         // Use UserDB to add the test user
         HTreeMap<String, String> users = UserDB.getInstance(tempDbFile).getMap();
-        assertNotNull(users);
+
+        assertNotNull("UserDB should be initialized", UserDB.getInstance(tempDbFile));
+        assertNotNull("UserDB map should be initialized", users);
+        
         String hashedPassword = Password.hash("password123").withBcrypt().getResult();
         users.put("testuser@test.it", hashedPassword);
         UserDB.getInstance(tempDbFile).commit();
