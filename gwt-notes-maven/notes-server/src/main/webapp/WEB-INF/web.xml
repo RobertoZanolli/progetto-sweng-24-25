@@ -45,14 +45,5 @@
 		<servlet-name>LoginServlet</servlet-name>
 		<url-pattern>/api/login</url-pattern>
 	</servlet-mapping>
-
-	<servlet>
-		<servlet-name>DeleteNoteServlet</servlet-name>
-		<servlet-class>com.google.gwt.sample.notes.server.DeleteNoteServlet</servlet-class>
-	</servlet>
-	<servlet-mapping>
-		<servlet-name>DeleteNoteServlet</servlet-name>
-		<url-pattern>/api/notes/*</url-pattern>
-        <!-- intercetta tutti gli uri /api/notes/... -->
-	</servlet-mapping>
+	
 </web-app>
