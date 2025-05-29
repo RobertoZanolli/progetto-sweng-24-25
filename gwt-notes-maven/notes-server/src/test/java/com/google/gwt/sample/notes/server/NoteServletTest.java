@@ -692,6 +692,32 @@ public class NoteServletTest {
         }
     }
 
+    String inputJson = "{\r\n" + //
+            "  \"title\": \"Esempio di nota\",\r\n" + //
+            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
+            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
+            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
+            "  \"tags\": null,\r\n" + //
+            "  \"owner\": {\r\n" + //
+            "    \"username\": \"utente_test\",\r\n" + //
+            "    \"email\": \"utente@example.com\"\r\n" + //
+            "  }\r\n" + //
+            "}";
+
+    String inputJsonWithId = "{\r\n" + //
+            "  \"id\": \"1\",\r\n" + //
+            "  \"title\": \"Esempio di nota\",\r\n" + //
+            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
+            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
+            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
+            "  \"tags\": null,\r\n" + //
+            "  \"owner\": {\r\n" + //
+            "    \"username\": \"utente_test\",\r\n" + //
+            "    \"email\": \"utente@example.com\"\r\n" + //
+            "  }\r\n" + //
+            "}";
+
+
     // doPost test
     @Test
     public void testCreateNewNote() throws Exception {
@@ -706,17 +732,18 @@ public class NoteServletTest {
         assertTrue(resp.getOutput().contains(noteLogName + " created"));
     }
 
-    String inputJson = "{\r\n" + //
-            "  \"title\": \"Esempio di nota\",\r\n" + //
-            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
-            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"tags\": null,\r\n" + //
-            "  \"owner\": {\r\n" + //
-            "    \"username\": \"utente_test\",\r\n" + //
-            "    \"email\": \"utente@example.com\"\r\n" + //
-            "  }\r\n" + //
-            "}";
+    @Test
+    public void testCreateNewNoteWithId() throws Exception {
+        Note user = NoteFactory.fromJson(inputJsonWithId);
+        String json = gson.toJson(user);
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
+        assertTrue(resp.getOutput().contains(noteLogName + " created"));
+    }
 
     @Test
     public void testCreateDuplicateNote() throws Exception {

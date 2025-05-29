@@ -119,7 +119,7 @@ public class NoteDetailPanel extends Composite {
         });
 
         editButton.addClickHandler(event -> {
-            // ToDo: collegare EditNotePanel
+            // ToDo: collegare EditNotePanel (ToDo)
         });
 
         duplicateButton.addClickHandler(event -> {

@@ -18,6 +18,9 @@ public class notes implements EntryPoint {
          * ToDo: implementare controllo per utente già loggato, così
          * quando ricarica la pagina non viene reindirizzato alla home
          * ma alla pagina di visualizzazione note
+         * 
+         * ToDo: aggiungere controllo per utenti non loggati
+         * per impedire accesso alle rotte senza login
          */
     }
 }

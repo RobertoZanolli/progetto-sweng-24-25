@@ -25,9 +25,6 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.i18n.client.DateTimeFormat;
 
-
-
-
 public class ViewNotesPanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
@@ -235,7 +232,7 @@ public class ViewNotesPanel extends Composite {
             JSONValue noteVal = array.get(i);
             if (noteVal != null && noteVal.isObject() != null) {
                 JSONObject obj = noteVal.isObject();
-                Note note = new Note();
+                Note note = new Note(obj.get("id").isString().stringValue());
 
                 // Title
                 if (obj.containsKey("title") && obj.get("title").isString() != null) {

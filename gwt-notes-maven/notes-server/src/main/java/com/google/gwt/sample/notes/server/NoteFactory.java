@@ -22,6 +22,19 @@ public class NoteFactory {
         return note;
     }
 
+    // Factory method con id
+    public static Note create(String id, String title, String content, String[] tags, User owner) {
+        Note note = new Note(id);
+        note.setTitle(title);
+        note.setContent(content);
+        note.setTags(tags);
+        note.setOwner(owner);
+        Date now = new Date();
+        note.setCreatedDate(now);
+        note.setLastModifiedDate(now);
+        return note;
+    }
+
     // Factory method da JSON
     public static Note fromJson(String json) {
         Note note = gson.fromJson(json, Note.class);

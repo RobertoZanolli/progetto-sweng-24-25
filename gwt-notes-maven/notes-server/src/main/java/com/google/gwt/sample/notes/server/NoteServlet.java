@@ -109,6 +109,7 @@ public class NoteServlet extends HttpServlet {
 
         noteMap.put(note.getId(), note);
         this.noteDB.commit();
+        
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " created");
     }
@@ -167,7 +168,6 @@ public class NoteServlet extends HttpServlet {
 
         noteMap.remove(noteId);
         this.noteDB.commit();
-        this.noteDB.close();
 
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " with ID " + noteId + " deleted");
