@@ -25,3 +25,4 @@ www-test/
 .gwt-tmp/
 
 target/
+*.lst

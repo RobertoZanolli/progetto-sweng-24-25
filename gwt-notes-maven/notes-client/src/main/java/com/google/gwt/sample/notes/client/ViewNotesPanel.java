@@ -28,11 +28,12 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 public class ViewNotesPanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
-    private List<Note> filteredNotes = new ArrayList<>();
+private List<Note> filteredNotes = new ArrayList<>();
+private String currentKeyword = "";
+private List<String> currentSelectedTags = new ArrayList<>();
     private final Label feedbackLabel = new Label();
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
-    private final Button createTagButton = new Button("Nuovo Tag");
     private final Button exitButton = new Button("Esci");
     
     @SuppressWarnings("deprecation")
@@ -67,7 +68,6 @@ public class ViewNotesPanel extends Composite {
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
         buttonPanel.add(createNoteButton);
-        buttonPanel.add(createTagButton);
         buttonPanel.add(exitButton);
         panel.add(feedbackLabel);
         panel.add(buttonPanel);
@@ -76,24 +76,24 @@ public class ViewNotesPanel extends Composite {
     private void setupHandlers() {
         // Gestione evento ricerca (filtra lista note per parola chiave)
         searchBox.addKeyUpHandler(event -> {
-            filterByKeyWord();
-            renderNotes();
+            currentKeyword = searchBox.getText().toLowerCase();
+            applyFilters();
         });
 
         // Gestione evento selezione tag (filtra lista note per tag)
         tagListBox.addChangeHandler(event -> {
-            filterByTag();
-            renderNotes();
+            currentSelectedTags.clear();
+            for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                if (tagListBox.isItemSelected(i)) {
+                    currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
+                }
+            }
+            applyFilters();
         });
         
         createNoteButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new CreateNotePanel());
-        });
-
-        createTagButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new CreateTagPanel());
         });
 
         exitButton.addClickHandler(event -> {
@@ -105,36 +105,25 @@ public class ViewNotesPanel extends Composite {
         });
     }
 
-    private void filterByTag() {
-        List<String> selectedTags = new ArrayList<>();
-        for (int i = 0; i < tagListBox.getItemCount(); i++) {
-            if (tagListBox.isItemSelected(i)) {
-                selectedTags.add(tagListBox.getItemText(i).toLowerCase());
-            }
-        }
-
+    private void applyFilters() {
         filteredNotes = notes.stream()
             .filter(n -> {
-                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
-                for (String tag : noteTags) {
-                    if (selectedTags.contains(tag.toLowerCase())) {
-                        return true;
-                    }
-                }
-                return selectedTags.isEmpty();
-            })
-            .collect(Collectors.toList());
-    }
-
-    private void filterByKeyWord() {
-        String keyWord = searchBox.getText().toLowerCase();
-        filteredNotes = notes.stream()
-            .filter(n -> {
+                // Filtro per keyword
                 String title = n.getTitle() != null ? n.getTitle().toLowerCase() : "";
                 String content = n.getContent() != null ? n.getContent().toLowerCase() : "";
-                return title.contains(keyWord) || content.contains(keyWord);
+                boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword) || content.contains(currentKeyword);
+                
+                // Filtro per tag
+                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                boolean matchesTags = currentSelectedTags.isEmpty() ||
+                                      currentSelectedTags.stream().anyMatch(tag ->
+                                          java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag))
+                                      );
+                
+                return matchesKeyword && matchesTags;
             })
             .collect(Collectors.toList());
+        renderNotes();
     }
 
     // Mostra le note filtrate
