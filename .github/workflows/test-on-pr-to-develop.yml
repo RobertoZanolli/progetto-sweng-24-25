@@ -1,0 +1,32 @@
+#Worflow per runnare i test durante apertura PR per vedere 
+#se il codice rompe rischia di rompere il branch.
+
+name: Test on PR to development
+
+on:
+  pull_request:
+    branches: [ "development" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: run tests 
+      run: |
+        echo "Step 1: Navigate to the directory"
+        cd gwt-notes-maven
+        echo "Step 2: Execute Maven tests"
+        mvn -U clean test
+
