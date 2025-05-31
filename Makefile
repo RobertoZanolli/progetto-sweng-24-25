@@ -6,7 +6,7 @@ CLIENT_MODULE := notes-client
 SERVER_MODULE := notes-server
 SHARED_MODULE := notes-shared
 
-.PHONY: help codeserver run-server reload-server compile test test-server clean
+.PHONY: help codeserver run-server compile-server test clean-test
 
 help:
 	@echo ""
@@ -17,7 +17,7 @@ help:
 	@echo "  make run-server      - Avvia Jetty sul modulo server in modalità dev (http://localhost:8080)"
 	@echo "  make compile-server  - Ricompila solo il modulo server (dopo modifiche backend)"
 	@echo "  make test            - Esegue tutti i test del progetto"
-	@echo "  make clean test      - Pulisce prima di eseguire i test"
+	@echo "  make clean-test      - Pulisce prima di eseguire i test"
 	@echo ""
 
 codeserver:
@@ -32,8 +32,6 @@ compile-server:
 test:
 	cd $(PROJECT_DIR) && mvn -U test
 
-test-server:
-	cd $(PROJECT_DIR) && mvn -U test -pl $(SERVER_MODULE) -am
 
-clean:
-	cd $(PROJECT_DIR) && mvn clean
+clean-test:
+	cd $(PROJECT_DIR) && mvn clean test
