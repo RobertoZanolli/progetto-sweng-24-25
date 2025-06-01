@@ -18,7 +18,8 @@ import com.google.gwt.http.client.RequestException;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONArray;
-
+import java.util.Date;
+import com.google.gwt.user.client.Window;
 
 public class NoteDetailPanel extends Composite {
 
@@ -34,6 +35,8 @@ public class NoteDetailPanel extends Composite {
     private final Button editButton = new Button("Modifica");
     private final Button duplicateButton = new Button("Duplica");
     private final Button backButton = new Button("Indietro");
+    private boolean isEditMode = false;
+
 
     public NoteDetailPanel(Note note) {
         this.note = note;
@@ -118,8 +121,73 @@ public class NoteDetailPanel extends Composite {
             }
         });
 
+
         editButton.addClickHandler(event -> {
-            // ToDo: collegare EditNotePanel (ToDo)
+            if (!isEditMode) {
+                isEditMode = true;
+                titleBox.setEnabled(true);
+                contentBox.setEnabled(true);
+                editButton.setText("Salva modifiche");
+            } else {
+                // Salvo le modifiche
+                String title = titleBox.getText().trim();
+                String content = contentBox.getText().trim();
+
+                if (title.isEmpty() || content.isEmpty()) {
+                    Window.alert("Titolo e contenuto sono obbligatori.");
+                    return;
+                }
+
+                JSONObject payload = new JSONObject();
+                payload.put("id", new JSONString(note.getId()));
+                payload.put("title", new JSONString(title));
+                payload.put("content", new JSONString(content));
+
+                JSONArray tagsArray = new JSONArray();
+                if (note.getTags() != null) {
+                    for (int i = 0; i < note.getTags().length; i++) {
+                        tagsArray.set(i, new JSONString(note.getTags()[i]));
+                    }
+                }
+                payload.put("tags", tagsArray);
+
+                if (note.getOwner() != null) {
+                    JSONObject ownerObj = new JSONObject();
+                    ownerObj.put("email", new JSONString(note.getOwner().getEmail()));
+                    payload.put("owner", ownerObj);
+                }
+
+                String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
+                builder.setHeader("Content-Type", "application/json");
+
+                try {
+                    builder.sendRequest(payload.toString(), new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText("Nota modificata con successo!");
+                                note.setTitle(title);
+                                note.setContent(content);
+                                note.setLastModifiedDate(new Date());
+                                isEditMode = false;
+                                titleBox.setEnabled(false);
+                                contentBox.setEnabled(false);
+                                editButton.setText("Modifica");
+                            } else {
+                                feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
+                            }
+                        }
+
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+                }
+            }
         });
 
         duplicateButton.addClickHandler(event -> {

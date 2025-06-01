@@ -9,6 +9,7 @@ import org.mapdb.HTreeMap;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
+import java.util.Date;
 
 @WebServlet("/notes")
 public class NoteServlet extends HttpServlet {
@@ -173,6 +174,84 @@ public class NoteServlet extends HttpServlet {
         resp.getWriter().write(noteLogName + " with ID " + noteId + " deleted");
     }
 
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        this.tagDB = TagDB.getInstance(this.dbFileTag);
+        this.noteDB = NoteDB.getInstance(this.dbFileNote);
+        HTreeMap<String, Tag> tagMap = tagDB.getMap();
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
+
+        if (noteMap == null || tagMap == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write("Database not initialized.");
+            return;
+        }
+
+        String noteId = req.getParameter("id");
+        System.err.println("ID ricevuto per PUT: " + noteId);
+
+        if (noteId == null || noteId.isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Missing or invalid note ID");
+            return;
+        }
+
+        if (!noteMap.containsKey(noteId)) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("Note not found.");
+            return;
+        }
+
+        Note updatedNote = null;
+        try {
+            String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            updatedNote = NoteFactory.fromJson(strNote);
+            System.err.println("Nota aggiornata ricevuta: " + strNote);
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid Note: " + e.getMessage());
+            return;
+        }
+
+        if (updatedNote == null || updatedNote.getTitle() == null || updatedNote.getTitle().isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Title required");
+            return;
+        }
+
+        Note existingNote = noteMap.get(noteId);
+        if (updatedNote.getOwner() == null || updatedNote.getOwner().getEmail() == null || updatedNote.getOwner().getEmail().isEmpty()) {
+            updatedNote.setOwner(existingNote.getOwner());
+        }
+        if (updatedNote.getCreatedDate() == null) {
+            updatedNote.setCreatedDate(existingNote.getCreatedDate());
+        }
+        updatedNote.setLastModifiedDate(new Date());
+
+        // Verifica dei tag
+        if (updatedNote.getTags() != null) {
+            for (String tag : updatedNote.getTags()) {
+                if (tag == null || tag.isEmpty()) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write("Tag name required");
+                    return;
+                }
+                if (!tagMap.containsKey(tag)) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write("Tag " + tag + " does not exist");
+                    return;
+                }
+            }
+        }
+
+        // Salvo la nota aggiornata
+        noteMap.put(noteId, updatedNote);
+        this.noteDB.commit();
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.getWriter().write("Note updated");
+    }
 
     @Override
     public void destroy() {
