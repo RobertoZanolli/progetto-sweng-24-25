@@ -221,8 +221,8 @@ public class NoteServlet extends HttpServlet {
         }
 
         Note existingNote = noteMap.get(noteId);
-        if (updatedNote.getOwner() == null || updatedNote.getOwner().getEmail() == null || updatedNote.getOwner().getEmail().isEmpty()) {
-            updatedNote.setOwner(existingNote.getOwner());
+        if (updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail().isEmpty()) {
+            updatedNote.setOwnerEmail(existingNote.getOwnerEmail());
         }
         if (updatedNote.getCreatedDate() == null) {
             updatedNote.setCreatedDate(existingNote.getCreatedDate());

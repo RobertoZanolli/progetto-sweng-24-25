@@ -50,7 +50,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
         HttpSession session = req.getSession(true);
-        session.setAttribute("user", user.getEmail());
+        session.setAttribute("userEmail", user.getEmail());
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("Login successful");
     }

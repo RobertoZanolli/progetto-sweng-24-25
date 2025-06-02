@@ -97,7 +97,7 @@ public class LoginServletTest {
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
         assertTrue(resp.getOutput().contains("Login successful"));
         assertNotNull(req.getSession(false));
-        assertEquals("testuser@test.it", req.getSession().getAttribute("user"));
+        assertEquals("testuser@test.it", req.getSession().getAttribute("userEmail"));
     }
 
     @Test

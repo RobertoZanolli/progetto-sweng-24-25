@@ -235,9 +235,9 @@ public class NoteDetailPanel extends Composite {
                 }
                 payload.put("tags", tagsArray);
 
-                if (note.getOwner() != null) {
+                if (note.getOwnerEmail() != null) {
                     JSONObject ownerObj = new JSONObject();
-                    ownerObj.put("email", new JSONString(note.getOwner().getEmail()));
+                    ownerObj.put("email", new JSONString(note.getOwnerEmail()));
                     payload.put("owner", ownerObj);
                 }
 

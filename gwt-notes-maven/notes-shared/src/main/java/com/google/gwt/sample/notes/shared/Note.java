@@ -12,7 +12,7 @@ public class Note implements Serializable {
     private Date createdDate;
     private Date lastModifiedDate;
     private String[] tags;
-    private User owner;
+    private String ownerEmail;
 
     public Note() {
         NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -42,8 +42,8 @@ public class Note implements Serializable {
     public String[] getTags() { return tags; }
     public void setTags(String[] tags) { this.tags = tags; }
 
-    public User getOwner() { return owner; }
-    public void setOwner(User owner) { this.owner = owner; }
+    public String getOwnerEmail() { return ownerEmail; }
+    public void setOwnerEmail(String ownerEmail) { this.ownerEmail = ownerEmail; }
 
     @Override
     public String toString() {
@@ -54,7 +54,7 @@ public class Note implements Serializable {
                 ", createdDate=" + createdDate +
                 ", lastModifiedDate=" + lastModifiedDate +
                 ", tags=" + Arrays.toString(tags) +
-                ", owner=" + owner +
+                ", ownerEmail=" + ownerEmail +
                 '}';
     }
 }
