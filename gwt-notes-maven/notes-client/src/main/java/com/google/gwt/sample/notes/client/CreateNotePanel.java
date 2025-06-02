@@ -143,6 +143,7 @@ public class CreateNotePanel extends Composite {
             payload.put("title", new JSONString(title));
             payload.put("content", new JSONString(content));
             payload.put("tags", tagsArray);
+            payload.put("ownerEmail", new JSONString("test@gmail.com"));
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
             builder.setHeader("Content-Type", "application/json");

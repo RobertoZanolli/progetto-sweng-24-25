@@ -92,8 +92,8 @@ public class NoteDetailPanel extends Composite {
 
 
         // CreatedDate
-        createdDateLabel.setText("Creata: " + (note.getCreatedDate() != null 
-            ? note.getCreatedDate().toString() : "Data non disponibile"));
+        createdDateLabel.setText("Creata: " + (note.getCreatedAt() != null 
+            ? note.getCreatedAt().toString() : "Data non disponibile"));
         panel.add(createdDateLabel);
 
         // LastModifiedDate

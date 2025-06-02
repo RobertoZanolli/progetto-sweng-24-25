@@ -1,60 +1,47 @@
 package com.google.gwt.sample.notes.shared;
 
 import java.util.Date;
+import java.util.ArrayList;
 import java.io.Serializable;
-import java.util.Arrays;
 
 public class Note implements Serializable {
-    private static final long serialVersionUID = 1L;
     private String id;
-    private String title;
-    private String content;
-    private Date createdDate;
-    private Date lastModifiedDate;
-    private String[] tags;
+    private Date createdAt;
     private String ownerEmail;
+    private Permission permissions;
+    private String[] tags;
+    private ArrayList<Version> versions;
 
-    public Note() {
-        NoteIdGenerator generator = new NoteIdGenerator(1);
-        long id = generator.nextId();
-        this.id = Long.toString(id); 
-    }
-
-    public Note(String id) {
-        this.id = id;
-    }
+    public Note() {}
 
     // Getters e Setters (obbligatori per Gson + POJO style)
     public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getOwnerEmail() { return ownerEmail; }
+    public void setOwnerEmail(String ownerEmail) { this.ownerEmail = ownerEmail; }
 
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
+    public Permission getPermissions() { return permissions; }
+    public void setPermissions(Permission permissions) { this.permissions = permissions; }
 
-    public Date getCreatedDate() { return createdDate; }
-    public void setCreatedDate(Date createdDate) { this.createdDate = createdDate; }
-
-    public Date getLastModifiedDate() { return lastModifiedDate; }
-    public void setLastModifiedDate(Date lastModifiedDate) { this.lastModifiedDate = lastModifiedDate; }
+    public Date getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Date createdDate) { this.createdAt = createdDate; }
 
     public String[] getTags() { return tags; }
     public void setTags(String[] tags) { this.tags = tags; }
 
-    public String getOwnerEmail() { return ownerEmail; }
-    public void setOwnerEmail(String ownerEmail) { this.ownerEmail = ownerEmail; }
+    public ArrayList<Version> getAllVersions() { return versions; }
+    public Version getCurrentVersion() { return versions.get(versions.size()-1); }
+    public void addVersion(Version version) { this.versions.add(version); }
 
     @Override
     public String toString() {
         return "Note{" +
                 "id='" + id + '\'' +
-                ", title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", createdDate=" + createdDate +
-                ", lastModifiedDate=" + lastModifiedDate +
-                ", tags=" + Arrays.toString(tags) +
+                ", createdAt=" + createdAt +
                 ", ownerEmail=" + ownerEmail +
+                ", permissions=" + permissions +
+                ", versionNumber=" + versions.size() +
                 '}';
     }
 }

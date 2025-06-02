@@ -75,7 +75,6 @@ public class NoteServlet extends HttpServlet {
         try {
             String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             note = NoteFactory.fromJson(strNote);
-            System.err.println(strNote);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());
@@ -189,7 +188,6 @@ public class NoteServlet extends HttpServlet {
         }
 
         String noteId = req.getParameter("id");
-        System.err.println("ID ricevuto per PUT: " + noteId);
 
         if (noteId == null || noteId.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -207,7 +205,6 @@ public class NoteServlet extends HttpServlet {
         try {
             String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             updatedNote = NoteFactory.fromJson(strNote);
-            System.err.println("Nota aggiornata ricevuta: " + strNote);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid Note: " + e.getMessage());
@@ -224,8 +221,8 @@ public class NoteServlet extends HttpServlet {
         if (updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail().isEmpty()) {
             updatedNote.setOwnerEmail(existingNote.getOwnerEmail());
         }
-        if (updatedNote.getCreatedDate() == null) {
-            updatedNote.setCreatedDate(existingNote.getCreatedDate());
+        if (updatedNote.getCreatedAt() == null) {
+            updatedNote.setCreatedAt(existingNote.getCreatedAt());
         }
         updatedNote.setLastModifiedDate(new Date());
 
