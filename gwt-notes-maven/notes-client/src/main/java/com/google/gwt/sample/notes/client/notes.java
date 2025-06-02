@@ -1,18 +1,25 @@
 package com.google.gwt.sample.notes.client;
 
 import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class notes implements EntryPoint {
     @Override
     public void onModuleLoad() {
+        
+        Session session = Session.getInstance();
+        if (session.getUserEmail() == null) {
+            RootPanel.get("mainPanel").add(new HomePanel());
+        } else {
+            RootPanel.get("mainPanel").add(new ViewNotesPanel());
+        }
         // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single page app
         //RootPanel.get("mainPanel").add(new CreateNotePanel());
         //RootPanel.get("mainPanel").add(new RegistrationPanel());
         //RootPanel.get("mainPanel").add(new ViewNotesPanel());
         //RootPanel.get("mainPanel").add(new RegistrationPanel());
         //RootPanel.get("mainPanel").add(new LoginPanel());
-        RootPanel.get("mainPanel").add(new HomePanel());
 
         /*
          * ToDo: implementare controllo per utente già loggato, così

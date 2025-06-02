@@ -10,6 +10,7 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.json.client.JSONArray;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.i18n.client.DateTimeFormat;
 
 public class NoteDetailPanel extends Composite {
 
@@ -61,12 +63,12 @@ public class NoteDetailPanel extends Composite {
         panel.setSpacing(10);
 
         panel.add(new Label("Titolo:"));
-        titleBox.setText(note.getTitle() != null ? note.getTitle() : "N/A");
+        titleBox.setText(note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A");
         titleBox.setEnabled(false); // Inizialmente non modificabile
         panel.add(titleBox);
 
         panel.add(new Label("Contenuto:"));
-        contentBox.setText(note.getContent() != null ? note.getContent() : "N/A");
+        contentBox.setText(note.getCurrentVersion().getContent() != null ? note.getCurrentVersion().getContent() : "N/A");
         contentBox.setVisibleLines(5);
         contentBox.setCharacterWidth(40);
         contentBox.setEnabled(false); // Inizialmente non modificabile
@@ -96,9 +98,9 @@ public class NoteDetailPanel extends Composite {
             ? note.getCreatedAt().toString() : "Data non disponibile"));
         panel.add(createdDateLabel);
 
-        // LastModifiedDate
-        lastModifiedDateLabel.setText("Ultima modifica: " + (note.getLastModifiedDate() != null 
-            ? note.getLastModifiedDate().toString() : "Data non disponibile"));
+        // Questa è la data dell'ultima versione in realtà
+        lastModifiedDateLabel.setText("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null 
+            ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
         panel.add(lastModifiedDateLabel);
 
 
@@ -208,7 +210,7 @@ public class NoteDetailPanel extends Composite {
                     tagListBox.setItemSelected(i, isSelected);
                 }
             } else {
-                // Salvo le modifiche
+                
                 String title = titleBox.getText().trim();
                 String content = contentBox.getText().trim();
 
@@ -217,14 +219,13 @@ public class NoteDetailPanel extends Composite {
                     return;
                 }
 
+                // payload per la nuova versione
                 JSONObject payload = new JSONObject();
-                payload.put("id", new JSONString(note.getId()));
                 payload.put("title", new JSONString(title));
                 payload.put("content", new JSONString(content));
 
                 JSONArray tagsArray = new JSONArray();
                 int tagIndex = 0;
-
                 for (int i = 0; i < tagListBox.getItemCount(); i++) {
                     if (tagListBox.isItemSelected(i)) {
                         String tagValue = tagListBox.getItemText(i);
@@ -234,12 +235,6 @@ public class NoteDetailPanel extends Composite {
                     }
                 }
                 payload.put("tags", tagsArray);
-
-                if (note.getOwnerEmail() != null) {
-                    JSONObject ownerObj = new JSONObject();
-                    ownerObj.put("email", new JSONString(note.getOwnerEmail()));
-                    payload.put("owner", ownerObj);
-                }
 
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
@@ -251,23 +246,30 @@ public class NoteDetailPanel extends Composite {
                         public void onResponseReceived(Request request, Response response) {
                             if (response.getStatusCode() == Response.SC_OK) {
                                 feedbackLabel.setText("Nota modificata con successo!");
-                                note.setTitle(title);
-                                note.setContent(content);
-                                note.setLastModifiedDate(new Date());
 
-                                    // Aggiorno i tag della nota con quelli selezionati
-                                    List<String> selectedTags = new ArrayList<>();
-                                    for (int i = 0; i < tagListBox.getItemCount(); i++) {
-                                        if (tagListBox.isItemSelected(i)) {
-                                            selectedTags.add(tagListBox.getValue(i));
-                                        }
+                               
+                                Version newVersion = new Version();
+                                newVersion.setTitle(title);
+                                newVersion.setContent(content);
+                                newVersion.setUpdatedAt(new Date());
+                                note.addVersion(newVersion);
+
+                                
+                                List<String> selectedTags = new ArrayList<>();
+                                for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                                    if (tagListBox.isItemSelected(i)) {
+                                        selectedTags.add(tagListBox.getValue(i));
                                     }
-                                    String[] tagsArray = selectedTags.toArray(new String[0]);
-                                    note.setTags(tagsArray);
+                                }
+                                String[] tagsArray = selectedTags.toArray(new String[0]);
+                                note.setTags(tagsArray);
+                                String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
+                                tagsLabel.setText("Tag: " + tagsString);
 
-                                    // Aggiorno la label con i tag nuovi
-                                    String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
-                                    tagsLabel.setText("Tag: " + tagsString);
+                                
+                                titleBox.setText(newVersion.getTitle());
+                                contentBox.setText(newVersion.getContent());
+                                lastModifiedDateLabel.setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
 
                                 isEditMode = false;
                                 titleBox.setEnabled(false);
@@ -275,7 +277,6 @@ public class NoteDetailPanel extends Composite {
                                 tagListBox.setEnabled(false);
                                 newTagBox.setEnabled(false);
                                 addTagButton.setEnabled(false);
-                                
                                 editButton.setText("Modifica");
                             } else {
                                 feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
@@ -293,16 +294,29 @@ public class NoteDetailPanel extends Composite {
             }
         });
 
+        DateTimeFormat isoFormat = DateTimeFormat.getFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         duplicateButton.addClickHandler(event -> {
             JSONObject payload = new JSONObject();
-            payload.put("title", new JSONString(note.getTitle() + " (copia)"));
-            payload.put("content", new JSONString(note.getContent()));
+            // DUplico tutte le versioni
+            JSONArray versionsArray = new JSONArray();
+            for (int i = 0; i < note.getAllVersions().size(); i++) {
+                Version v = note.getAllVersions().get(i);
+                JSONObject vObj = new JSONObject();
+                vObj.put("title", new JSONString((i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
+                vObj.put("content", new JSONString(v.getContent()));
+                if (v.getUpdatedAt() != null) {
+                    vObj.put("updatedAt", new JSONString(isoFormat.format(v.getUpdatedAt())));
+                }
+                versionsArray.set(i, vObj);
+            }
+            payload.put("versions", versionsArray);
             JSONArray tagsArray = new JSONArray();
             String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
             for (int i = 0; i < noteTags.length; i++) {
                 tagsArray.set(i, new JSONString(noteTags[i]));
             }
             payload.put("tags", tagsArray);
+            payload.put("ownerEmail", new JSONString(note.getOwnerEmail() ));
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
             builder.setHeader("Content-Type", "application/json");

@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
+import com.google.gwt.sample.notes.server.VersionFactory;
+import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
 
@@ -17,28 +19,29 @@ public class NoteFactory {
         NoteIdGenerator generator = new NoteIdGenerator(1);
         long id = generator.nextId();
         note.setId(Long.toString(id));
-        
-        note.setTitle(title);
-        note.setContent(content);
         note.setTags(tags);
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
-        note.setLastModifiedDate(now);
+        // Add initial version
+        Version initialVersion = VersionFactory.create(title, content);
+        note.addVersion(initialVersion);
         return note;
     }
 
     // Factory method con id
     public static Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permissions) {
-        Note note = new Note(id);
-        note.setTitle(title);
-        note.setContent(content);
+        Note note = new Note();
+        note.setId(id);
         note.setTags(tags);
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
-        note.setLastModifiedDate(now);
-        note.setPermissions(Permission.PRIVATE);
+        note.setPermissions(permissions);
+        // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION 
+        // QUANDO INVOCHIAMO NELLA HOME GETCURRENTVERSION()
+        Version initialVersion = VersionFactory.create(title, content);
+        note.addVersion(initialVersion);
         return note;
     }
 
@@ -48,7 +51,12 @@ public class NoteFactory {
         // Gestione date null
         Date now = new Date();
         if (note.getCreatedAt() == null) note.setCreatedAt(now);
-        if (note.getLastModifiedDate() == null) note.setLastModifiedDate(now);
+
+        if (note.getId() == null || note.getId().isEmpty()) {
+            NoteIdGenerator generator = new NoteIdGenerator(1);
+            long id = generator.nextId();
+            note.setId(Long.toString(id));
+        }
 
         return note;
     }

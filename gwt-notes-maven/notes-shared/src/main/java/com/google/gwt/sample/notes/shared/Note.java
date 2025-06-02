@@ -12,7 +12,13 @@ public class Note implements Serializable {
     private String[] tags;
     private ArrayList<Version> versions;
 
-    public Note() {}
+    public Note() {
+        this.versions = new ArrayList<>();
+    }
+
+    public Note(String id) {
+        this.id = id;
+    }
 
     // Getters e Setters (obbligatori per Gson + POJO style)
     public String getId() { return id; }

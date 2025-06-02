@@ -1,11 +1,12 @@
 package com.google.gwt.sample.notes.shared;
 
 import java.util.Date;
+import java.io.Serializable;
 
-public class Version {
+public class Version implements Serializable {
     private String title;
     private String content;
-    private Date editedAt;
+    private Date updatedAt;
 
     public Version() {}
 
@@ -15,15 +16,15 @@ public class Version {
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
 
-    public Date getEditedAt() { return editedAt; }
-    public void setEditedAt(Date editedAt) { this.editedAt = editedAt; }
+    public Date getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
 
     @Override
     public String toString() {
         return "Version{" +
                 "title='" + title + '\'' +
                 ", content='" + content + '\'' +
-                ", editedAt=" + editedAt +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
 }

@@ -1,17 +1,19 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
+import com.google.gwt.sample.notes.shared.Version;
 
 import org.mapdb.HTreeMap;
 
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.Date;
 
-@WebServlet("/notes")
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
     private File dbFileTag = null;
@@ -23,7 +25,6 @@ public class NoteServlet extends HttpServlet {
     private NoteDB noteDB;
 
     public NoteServlet() {
-        // Default constructor for servlet container
     }
 
     public NoteServlet(File dbFileNote, File dbFileTag) {
@@ -80,14 +81,38 @@ public class NoteServlet extends HttpServlet {
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());
             return;
         }
-        if (note == null || note.getTitle() == null || note.getTitle().isEmpty()) {
+
+        if (note == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Title required");
+            resp.getWriter().write("Invalid note data");
             return;
         }
+
+        if (note.getId() == null || note.getId().isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Note ID required");
+            return;
+        }
+
         if (noteMap.containsKey(note.getId())) {
             resp.setStatus(HttpServletResponse.SC_CONFLICT);
             resp.getWriter().write(noteLogName + " already exists");
+            return;
+        }
+
+        if (note.getAllVersions() == null || note.getAllVersions().isEmpty()) {
+            String title = "Untitled";
+            String content = "";
+            Version firstVersion = new Version();
+            firstVersion.setTitle(title);
+            firstVersion.setContent(content);
+            firstVersion.setUpdatedAt(new Date());
+            note.addVersion(firstVersion);
+        }
+
+        if (note == null || note.getCurrentVersion() == null || note.getCurrentVersion().getTitle() == null || note.getCurrentVersion().getTitle().isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Title required");
             return;
         }
 
@@ -186,8 +211,9 @@ public class NoteServlet extends HttpServlet {
             resp.getWriter().write("Database not initialized.");
             return;
         }
-
+        String permission = req.getParameter("permission");
         String noteId = req.getParameter("id");
+
 
         if (noteId == null || noteId.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -201,37 +227,40 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
-        Note updatedNote = null;
+        Version newVersion = null;
+        String[] newTags = null;
         try {
-            String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            updatedNote = NoteFactory.fromJson(strNote);
+            String strVersion = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+
+            JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
+            if (jsonObj.has("tags") && jsonObj.get("tags").isJsonArray()) {
+                JsonArray tagsArray = jsonObj.getAsJsonArray("tags");
+                newTags = new String[tagsArray.size()];
+                for (int i = 0; i < tagsArray.size(); i++) {
+                    newTags[i] = tagsArray.get(i).getAsString();
+                }
+            }
+            newVersion = VersionFactory.fromJson(strVersion);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid Note: " + e.getMessage());
+            resp.getWriter().write("Invalid Version: " + e.getMessage());
             return;
         }
 
-        if (updatedNote == null || updatedNote.getTitle() == null || updatedNote.getTitle().isEmpty()) {
+        if (newVersion == null || newVersion.getTitle() == null || newVersion.getTitle().isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Title required");
             return;
         }
 
         Note existingNote = noteMap.get(noteId);
-        if (updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail() == null || updatedNote.getOwnerEmail().isEmpty()) {
-            updatedNote.setOwnerEmail(existingNote.getOwnerEmail());
-        }
-        if (updatedNote.getCreatedAt() == null) {
-            updatedNote.setCreatedAt(existingNote.getCreatedAt());
-        }
-        updatedNote.setLastModifiedDate(new Date());
 
-        // Verifica dei tag
-        if (updatedNote.getTags() != null) {
-            for (String tag : updatedNote.getTags()) {
+
+        if (newTags != null) {
+            for (String tag : newTags) {
                 if (tag == null || tag.isEmpty()) {
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    resp.getWriter().write("Tag name required");
+                    resp.getWriter().write(tagLogName + " name required");
                     return;
                 }
                 if (!tagMap.containsKey(tag)) {
@@ -240,14 +269,16 @@ public class NoteServlet extends HttpServlet {
                     return;
                 }
             }
+            existingNote.setTags(newTags);
         }
 
-        // Salvo la nota aggiornata
-        noteMap.put(noteId, updatedNote);
+        existingNote.addVersion(newVersion);
+
+        noteMap.put(noteId, existingNote);
         this.noteDB.commit();
 
         resp.setStatus(HttpServletResponse.SC_OK);
-        resp.getWriter().write("Note updated");
+        resp.getWriter().write("Note updated with new version");
     }
 
     @Override

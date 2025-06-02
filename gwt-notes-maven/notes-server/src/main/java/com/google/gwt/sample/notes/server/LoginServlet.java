@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.mapdb.HTreeMap;
@@ -49,8 +50,10 @@ public class LoginServlet extends HttpServlet {
             resp.getWriter().write("Invalid credentials");
             return;
         }
-        HttpSession session = req.getSession(true);
-        session.setAttribute("userEmail", user.getEmail());
+
+        Session session = Session.getInstance();
+        session.setUserEmail(user.getEmail());
+        
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("Login successful");
     }
