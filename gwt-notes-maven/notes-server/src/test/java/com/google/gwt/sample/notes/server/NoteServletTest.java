@@ -17,7 +17,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.*;
 import java.util.Date;
 
-import java.util.UUID;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
@@ -107,7 +106,7 @@ public class NoteServletTest {
 
     @Test
     public void testCreateNewNote() throws Exception {
-        Note note = createValidNote(UUID.randomUUID().toString());
+        Note note = createValidNote("testTag2");
         String json = gson.toJson(note);
         StubHttpServletRequest req = new StubHttpServletRequest(json);
         StubHttpServletResponse resp = new StubHttpServletResponse();
