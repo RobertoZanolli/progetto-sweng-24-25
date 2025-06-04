@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
-import com.google.gwt.sample.notes.server.VersionFactory;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
@@ -23,7 +22,7 @@ public class NoteFactory {
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
-        // Add initial version
+        
         Version initialVersion = VersionFactory.create(title, content);
         note.addVersion(initialVersion);
         return note;
@@ -50,6 +49,7 @@ public class NoteFactory {
         Note note = gson.fromJson(json, Note.class);
         // Gestione date null
         Date now = new Date();
+
         if (note.getCreatedAt() == null) note.setCreatedAt(now);
 
         if (note.getId() == null || note.getId().isEmpty()) {
@@ -57,6 +57,9 @@ public class NoteFactory {
             long id = generator.nextId();
             note.setId(Long.toString(id));
         }
+
+        if (note.getCurrentVersion().getUpdatedAt() == null) note.getCurrentVersion().setUpdatedAt(now);
+
 
         return note;
     }

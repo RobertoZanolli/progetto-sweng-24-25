@@ -29,6 +29,8 @@ import com.google.gwt.json.client.JSONArray;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.ui.Panel;
+
 
 public class NoteDetailPanel extends Composite {
 
@@ -48,6 +50,7 @@ public class NoteDetailPanel extends Composite {
     private final Button deleteButton = new Button("Elimina");
     private final Button editButton = new Button("Modifica");
     private final Button duplicateButton = new Button("Duplica");
+    private final Button viewHistory = new Button("Vedi cronologia");
     private final Button backButton = new Button("Indietro");
     private boolean isEditMode = false;
 
@@ -109,6 +112,7 @@ public class NoteDetailPanel extends Composite {
         buttonPanel.add(deleteButton);
         buttonPanel.add(editButton);
         buttonPanel.add(duplicateButton);
+        buttonPanel.add(viewHistory);
         buttonPanel.add(backButton);
         panel.add(buttonPanel);
         panel.add(feedbackLabel);
@@ -339,6 +343,11 @@ public class NoteDetailPanel extends Composite {
             } catch (RequestException e) {
                 feedbackLabel.setText("Request error: " + e.getMessage());
             }
+        });
+
+        viewHistory.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new NoteHistory(note));
         });
     }
 

@@ -12,7 +12,6 @@ import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
 import java.io.*;
-import java.util.Date;
 
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
@@ -101,13 +100,9 @@ public class NoteServlet extends HttpServlet {
         }
 
         if (note.getAllVersions() == null || note.getAllVersions().isEmpty()) {
-            String title = "Untitled";
-            String content = "";
-            Version firstVersion = new Version();
-            firstVersion.setTitle(title);
-            firstVersion.setContent(content);
-            firstVersion.setUpdatedAt(new Date());
-            note.addVersion(firstVersion);
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("At least one version required");
+            return;
         }
 
         if (note == null || note.getCurrentVersion() == null || note.getCurrentVersion().getTitle() == null || note.getCurrentVersion().getTitle().isEmpty()) {
@@ -211,7 +206,6 @@ public class NoteServlet extends HttpServlet {
             resp.getWriter().write("Database not initialized.");
             return;
         }
-        String permission = req.getParameter("permission");
         String noteId = req.getParameter("id");
 
 

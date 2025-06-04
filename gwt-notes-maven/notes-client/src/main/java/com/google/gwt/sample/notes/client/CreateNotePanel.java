@@ -139,9 +139,18 @@ public class CreateNotePanel extends Composite {
                 return;
             }
 
+            // Create the first version as a JSON object
+            JSONObject versionObj = new JSONObject();
+            versionObj.put("title", new JSONString(title));
+            versionObj.put("content", new JSONString(content));
+
+            // Put it in a versions array
+            JSONArray versionsArray = new JSONArray();
+            versionsArray.set(0, versionObj);
+
+            // Build the payload
             JSONObject payload = new JSONObject();
-            payload.put("title", new JSONString(title));
-            payload.put("content", new JSONString(content));
+            payload.put("versions", versionsArray);
             payload.put("tags", tagsArray);
             payload.put("ownerEmail", new JSONString("test@gmail.com"));
 
