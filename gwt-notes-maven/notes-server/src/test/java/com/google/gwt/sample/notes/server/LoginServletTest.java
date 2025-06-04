@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.junit.After;
@@ -96,8 +97,7 @@ public class LoginServletTest {
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
         assertTrue(resp.getOutput().contains("Login successful"));
-        assertNotNull(req.getSession(false));
-        assertEquals("testuser@test.it", req.getSession().getAttribute("userEmail"));
+        assertEquals("testuser@test.it", Session.getInstance().getUserEmail());
     }
 
     @Test
