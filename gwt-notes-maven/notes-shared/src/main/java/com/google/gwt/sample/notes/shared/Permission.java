@@ -4,31 +4,31 @@ public enum Permission {
     PRIVATE {
         @Override
         public boolean canView(String userEmail, Note note) {
-            return note.getOwnerEmail().equals(userEmail);
+            return note.isOwner(userEmail);
         }
         @Override
         public boolean canEdit(String userEmail, Note note) {
-            return note.getOwnerEmail().equals(userEmail);
+            return note.isOwner(userEmail);
         }
     },
     READ {
         @Override
         public boolean canView(String userEmail, Note note) {
-            return true;
+            return note.isOwner(userEmail) || !note.isHiddenForUser(userEmail);
         }
         @Override
         public boolean canEdit(String userEmail, Note note) {
-            return note.getOwnerEmail().equals(userEmail);
+            return note.isOwner(userEmail);
         }
     },
     WRITE {
         @Override
         public boolean canView(String userEmail, Note note) {
-            return true;
+            return note.isOwner(userEmail) || !note.isHiddenForUser(userEmail);
         }
         @Override
         public boolean canEdit(String userEmail, Note note) {
-            return true;
+            return note.isOwner(userEmail) || !note.isHiddenForUser(userEmail);
         }
     };
 

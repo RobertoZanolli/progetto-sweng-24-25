@@ -5,10 +5,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.Permission;
 
 import org.mapdb.HTreeMap;
 
@@ -26,14 +26,16 @@ public class NoteServlet extends HttpServlet {
     private final String tagLogName = "Tag";
     private TagDB tagDB;
     private NoteDB noteDB;
-    private String userEmail;
+    private Session session;
 
     public NoteServlet() {
+        this.session = Session.getInstance();
     }
 
     public NoteServlet(File dbFileNote, File dbFileTag) {
         this.dbFileNote = dbFileNote;
         this.dbFileTag = dbFileTag;
+        this.session = Session.getInstance();
     }
 
     public void setDbFileNote(File dbFile) {
@@ -48,7 +50,6 @@ public class NoteServlet extends HttpServlet {
     public void init() {
         this.dbFileTag = dbFileTag != null ? dbFileTag : new File(tagTableName + ".db");
         this.dbFileNote = dbFileNote != null ? dbFileNote : new File(noteTableName + ".db");
-        this.userEmail = Session.getInstance().getUserEmail();
 
         // use only to remake the database
         /*
@@ -142,6 +143,8 @@ public class NoteServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String userEmail = this.session.getUserEmail();
+
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
 
@@ -158,7 +161,7 @@ public class NoteServlet extends HttpServlet {
         // Filtra le note in base ai permessi e allo stato nascosto per l'utente
         List<Note> visibleNotes = new ArrayList<>();
         for (Note note : noteMap.values()) {
-            if (note.getPermission().canView(this.userEmail, note) && !note.isHiddenForUser(this.userEmail)) {
+            if (note.getPermission().canView(userEmail, note)) {
                 visibleNotes.add(note);
             }
         }
@@ -178,6 +181,8 @@ public class NoteServlet extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String userEmail = this.session.getUserEmail();
+
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
 
@@ -200,10 +205,11 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
+        Note noteToDelete = noteMap.get(noteId);
         // Controllo permessi
-        if (!Permission.WRITE.canEdit(this.userEmail, noteMap.get(noteId))) {
+        if (!noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("User " + this.userEmail + " does not have permission to delete note " + noteId);
+            resp.getWriter().write("User " + userEmail + " does not have permission to delete note " + noteId);
             return;
         }
 
@@ -218,6 +224,8 @@ public class NoteServlet extends HttpServlet {
     @SuppressWarnings("deprecation")
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String userEmail = this.session.getUserEmail();
+
         this.tagDB = TagDB.getInstance(this.dbFileTag);
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Tag> tagMap = tagDB.getMap();
@@ -242,10 +250,12 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
+        Note noteToUpdate = noteMap.get(noteId);
+
         // Controllo permessi
-        if (!Permission.WRITE.canEdit(this.userEmail, noteMap.get(noteId))) {
+        if (!noteToUpdate.getPermission().canEdit(userEmail, noteToUpdate)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("User " + this.userEmail + " does not have permission to update note " + noteId);
+            resp.getWriter().write("User " + userEmail + " does not have permission to update note " + noteId);
             return;
         }
 
@@ -253,8 +263,9 @@ public class NoteServlet extends HttpServlet {
         String[] newTags = null;
         try {
             String strVersion = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-
             JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
+
+            // Aggiorna tag se presenti nel JSON
             if (jsonObj.has("tags") && jsonObj.get("tags").isJsonArray()) {
                 JsonArray tagsArray = jsonObj.getAsJsonArray("tags");
                 newTags = new String[tagsArray.size()];
@@ -262,6 +273,13 @@ public class NoteServlet extends HttpServlet {
                     newTags[i] = tagsArray.get(i).getAsString();
                 }
             }
+
+            // Aggiorna permesso se presente nel JSON
+            if (jsonObj.has("permission") && !jsonObj.get("permission").isJsonNull()) {
+                String permString = jsonObj.get("permission").getAsString();
+                noteToUpdate.setPermission(Permission.valueOf(permString));
+            }
+
             newVersion = VersionFactory.fromJson(strVersion);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);

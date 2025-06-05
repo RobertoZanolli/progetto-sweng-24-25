@@ -13,6 +13,7 @@ public class LoginServlet extends HttpServlet {
     private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
+    private Session session;
 
     public LoginServlet() {}
     public LoginServlet(String dbPath) { this.dbPath = dbPath; }
@@ -21,6 +22,7 @@ public class LoginServlet extends HttpServlet {
     public void init() {
         String pathToUse = dbPath != null ? dbPath : new java.io.File("users.db").getAbsolutePath();
         userDB = UserDB.getInstance(new File(pathToUse));
+        session = Session.getInstance();
     }
 
     @Override
@@ -51,7 +53,6 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        Session session = Session.getInstance();
         session.setUserEmail(user.getEmail());
         
         resp.setStatus(HttpServletResponse.SC_OK);

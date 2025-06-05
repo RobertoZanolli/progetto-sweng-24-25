@@ -39,12 +39,15 @@ public class Note implements Serializable {
     public void setOwnerEmail(String ownerEmail) { 
         this.ownerEmail = ownerEmail; 
     }
+    public boolean isOwner(String userEmail) {
+        return this.ownerEmail.equals(userEmail);
+    }
 
     public Permission getPermission() { 
         return this.permission; 
     }
-    public void setPermission(Permission permissions) { 
-        this.permission = permissions; 
+    public void setPermission(Permission permission) { 
+        this.permission = permission; 
     }
 
     public Date getCreatedAt() { 
@@ -81,7 +84,10 @@ public class Note implements Serializable {
         return this.hiddenUsers.contains(userEmail); 
     }
     public boolean hideForUser(String userEmail) { 
-        return this.hiddenUsers.add(userEmail); 
+        if(userEmail.equals(this.ownerEmail)) {
+            return false;
+        }
+        return this.hiddenUsers.add(userEmail);
     }
 
     @Override

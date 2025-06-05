@@ -156,8 +156,6 @@ public class CreateNotePanel extends Composite {
             JSONObject payload = new JSONObject();
             payload.put("versions", versionsArray);
             payload.put("tags", tagsArray);
-
-            // Aggiungi permessi
             String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
             payload.put("permission", new JSONString(selectedPermission));
 
