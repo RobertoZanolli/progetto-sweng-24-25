@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
@@ -63,6 +64,10 @@ public class NoteFactory {
             NoteIdGenerator generator = new NoteIdGenerator(1);
             long id = generator.nextId();
             note.setId(Long.toString(id));
+        }
+
+        if (note.getOwnerEmail() == null) {
+            note.setOwnerEmail(Session.getInstance().getUserEmail());
         }
 
         // Imposta il permesso dal JSON o usa default PRIVATE se mancante
