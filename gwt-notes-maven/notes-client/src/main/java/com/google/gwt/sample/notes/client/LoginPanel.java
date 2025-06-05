@@ -5,6 +5,7 @@ import com.google.gwt.http.client.*;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.sample.notes.shared.Session;
 
 public class LoginPanel extends VerticalPanel {
     private final TextBox emailBox = new TextBox();
@@ -65,6 +66,7 @@ public class LoginPanel extends VerticalPanel {
                     loginButton.setEnabled(true);
                     if (response.getStatusCode() == Response.SC_OK) {
                         feedbackLabel.setText("Login successful!");
+                        Session.getInstance().setUserEmail(email);
                         RootPanel.get("mainPanel").clear();
                         RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {

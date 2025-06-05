@@ -43,7 +43,7 @@ public class LoginServlet extends HttpServlet {
         }
         if (user == null || user.getEmail() == null || user.getPassword() == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("email and password required");
+            resp.getWriter().write("Email and password required");
             return;
         }
         String hash = users.get(user.getEmail());

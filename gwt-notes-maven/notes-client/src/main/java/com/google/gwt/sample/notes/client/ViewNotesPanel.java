@@ -102,8 +102,7 @@ public class ViewNotesPanel extends Composite {
             panel.clear();
             panel.add(new HomePanel());
 
-            Session session = Session.getInstance();
-            session.destroy();
+            Session.getInstance().destroy();
         });
     }
 
