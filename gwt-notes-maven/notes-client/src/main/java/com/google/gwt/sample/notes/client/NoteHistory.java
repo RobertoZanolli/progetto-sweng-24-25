@@ -14,10 +14,8 @@ public class NoteHistory extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final Note note;
 
-
     public NoteHistory(Note note) {
         this.note = note;
-
         initWidget(panel);
         buildUI();
     }

@@ -66,6 +66,7 @@ public class CreateNotePanel extends Composite {
 
         getTags();
         panel.add(tagListBox);
+
         panel.add(new Label("Permessi:"));
         permissionListBox.addItem("Privata", "PRIVATE");
         permissionListBox.addItem("Lettura Pubblica", "READ");
@@ -156,6 +157,7 @@ public class CreateNotePanel extends Composite {
             JSONObject payload = new JSONObject();
             payload.put("versions", versionsArray);
             payload.put("tags", tagsArray);
+            
             String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
             payload.put("permission", new JSONString(selectedPermission));
 

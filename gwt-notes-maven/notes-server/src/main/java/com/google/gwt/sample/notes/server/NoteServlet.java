@@ -261,6 +261,7 @@ public class NoteServlet extends HttpServlet {
 
         Version newVersion = null;
         String[] newTags = null;
+        Permission newPermission = null;
         try {
             String strVersion = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
@@ -277,7 +278,7 @@ public class NoteServlet extends HttpServlet {
             // Aggiorna permesso se presente nel JSON
             if (jsonObj.has("permission") && !jsonObj.get("permission").isJsonNull()) {
                 String permString = jsonObj.get("permission").getAsString();
-                noteToUpdate.setPermission(Permission.valueOf(permString));
+                newPermission = Permission.valueOf(permString);
             }
 
             newVersion = VersionFactory.fromJson(strVersion);
@@ -309,6 +310,9 @@ public class NoteServlet extends HttpServlet {
                 }
             }
             existingNote.setTags(newTags);
+        }
+        if (newPermission != null) {
+            existingNote.setPermission(newPermission);
         }
 
         existingNote.newVersion(newVersion);
