@@ -46,11 +46,11 @@ public class LoginPanel extends VerticalPanel {
         String password = passwordBox.getText();
 
         if (email.isEmpty() || password.isEmpty()) {
-            feedbackLabel.setText("Email and password required.");
+            feedbackLabel.setText("Email e password obbligatorie.");
             return;
         }
         loginButton.setEnabled(false);
-        feedbackLabel.setText("Logging in...");
+        feedbackLabel.setText("Accesso in corso...");
 
         JSONObject payload = new JSONObject();
         payload.put("email", new JSONString(email));
@@ -68,18 +68,18 @@ public class LoginPanel extends VerticalPanel {
                         RootPanel.get("mainPanel").clear();
                         RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {
-                        feedbackLabel.setText("Login failed: " + response.getText());
+                        feedbackLabel.setText("Login fallito: utente non registrato");
                     }
                 }
                 @Override
                 public void onError(Request request, Throwable exception) {
                     loginButton.setEnabled(true);
-                    feedbackLabel.setText("Error: " + exception.getMessage());
+                    feedbackLabel.setText("Errore: " + exception.getMessage());
                 }
             });
         } catch (RequestException e) {
             loginButton.setEnabled(true);
-            feedbackLabel.setText("Request error: " + e.getMessage());
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             return;
         }
     }

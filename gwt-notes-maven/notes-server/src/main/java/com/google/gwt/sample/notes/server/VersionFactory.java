@@ -24,7 +24,9 @@ public class VersionFactory {
         Version version = gson.fromJson(json, Version.class);
 
         Date now = new Date();
-        if (version.getUpdatedAt() == null) version.setUpdatedAt(now);
+        if (version.getUpdatedAt() == null) {
+            version.setUpdatedAt(now);
+        }
 
         return version;
     }

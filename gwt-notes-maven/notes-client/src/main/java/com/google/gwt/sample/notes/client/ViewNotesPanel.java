@@ -282,7 +282,7 @@ public class ViewNotesPanel extends Composite {
                                     GWT.log("Errore parsing updatedAt: " + e.getMessage());
                                 }
                             }
-                            note.addVersion(version);
+                            note.newVersion(version);
                             System.out.println("Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
                         }
                     }

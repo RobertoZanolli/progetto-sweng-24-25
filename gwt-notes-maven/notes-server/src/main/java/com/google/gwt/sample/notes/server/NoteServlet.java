@@ -5,6 +5,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Permission;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
 
@@ -12,6 +14,8 @@ import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
 import java.io.*;
+import java.util.List;
+import java.util.ArrayList;
 
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
@@ -22,6 +26,7 @@ public class NoteServlet extends HttpServlet {
     private final String tagLogName = "Tag";
     private TagDB tagDB;
     private NoteDB noteDB;
+    private String userEmail;
 
     public NoteServlet() {
     }
@@ -43,6 +48,7 @@ public class NoteServlet extends HttpServlet {
     public void init() {
         this.dbFileTag = dbFileTag != null ? dbFileTag : new File(tagTableName + ".db");
         this.dbFileNote = dbFileNote != null ? dbFileNote : new File(noteTableName + ".db");
+        this.userEmail = Session.getInstance().getUserEmail();
 
         // use only to remake the database
         /*
@@ -149,9 +155,17 @@ public class NoteServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        // Usa Gson per convertire la collezione di note in JSON
+        // Filtra le note in base ai permessi e allo stato nascosto per l'utente
+        List<Note> visibleNotes = new ArrayList<>();
+        for (Note note : noteMap.values()) {
+            if (note.getPermission().canView(this.userEmail, note) && !note.isHiddenForUser(this.userEmail)) {
+                visibleNotes.add(note);
+            }
+        }
+
+        // Usa Gson per convertire la lista filtrata in JSON
         Gson gson = new Gson();
-        String json = gson.toJson(noteMap.values());
+        String json = gson.toJson(visibleNotes);
 
         // Scrivi nella risposta
         PrintWriter out = resp.getWriter();
@@ -186,6 +200,13 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
+        // Controllo permessi
+        if (!Permission.WRITE.canEdit(this.userEmail, noteMap.get(noteId))) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.getWriter().write("User " + this.userEmail + " does not have permission to delete note " + noteId);
+            return;
+        }
+
         noteMap.remove(noteId);
         this.noteDB.commit();
 
@@ -194,6 +215,7 @@ public class NoteServlet extends HttpServlet {
     }
 
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         this.tagDB = TagDB.getInstance(this.dbFileTag);
@@ -206,9 +228,8 @@ public class NoteServlet extends HttpServlet {
             resp.getWriter().write("Database not initialized.");
             return;
         }
+
         String noteId = req.getParameter("id");
-
-
         if (noteId == null || noteId.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Missing or invalid note ID");
@@ -218,6 +239,13 @@ public class NoteServlet extends HttpServlet {
         if (!noteMap.containsKey(noteId)) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resp.getWriter().write("Note not found.");
+            return;
+        }
+
+        // Controllo permessi
+        if (!Permission.WRITE.canEdit(this.userEmail, noteMap.get(noteId))) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.getWriter().write("User " + this.userEmail + " does not have permission to update note " + noteId);
             return;
         }
 
@@ -249,7 +277,6 @@ public class NoteServlet extends HttpServlet {
 
         Note existingNote = noteMap.get(noteId);
 
-
         if (newTags != null) {
             for (String tag : newTags) {
                 if (tag == null || tag.isEmpty()) {
@@ -266,7 +293,7 @@ public class NoteServlet extends HttpServlet {
             existingNote.setTags(newTags);
         }
 
-        existingNote.addVersion(newVersion);
+        existingNote.newVersion(newVersion);
 
         noteMap.put(noteId, existingNote);
         this.noteDB.commit();

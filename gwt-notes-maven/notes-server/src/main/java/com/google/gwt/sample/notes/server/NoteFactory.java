@@ -12,7 +12,7 @@ public class NoteFactory {
     private static final Gson gson = new Gson();
 
     // Factory method standard
-    public static Note create(String title, String content, String[] tags, String ownerEmail) {
+    public static Note create(String title, String content, String[] tags, String ownerEmail, Permission permissions) {
         Note note = new Note();
 
         NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -22,9 +22,10 @@ public class NoteFactory {
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
+        note.setPermission(permissions);
         
         Version initialVersion = VersionFactory.create(title, content);
-        note.addVersion(initialVersion);
+        note.newVersion(initialVersion);
         return note;
     }
 
@@ -36,21 +37,23 @@ public class NoteFactory {
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
-        note.setPermissions(permissions);
+        note.setPermission(permissions);
+
         // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION 
         // QUANDO INVOCHIAMO NELLA HOME GETCURRENTVERSION()
         Version initialVersion = VersionFactory.create(title, content);
-        note.addVersion(initialVersion);
+        note.newVersion(initialVersion);
         return note;
     }
 
     // Factory method da JSON
     public static Note fromJson(String json) {
         Note note = gson.fromJson(json, Note.class);
-        // Gestione date null
-        Date now = new Date();
 
-        if (note.getCreatedAt() == null) note.setCreatedAt(now);
+        Date now = new Date();
+        if (note.getCreatedAt() == null) {
+            note.setCreatedAt(now);
+        }
 
         if (note.getId() == null || note.getId().isEmpty()) {
             NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -58,8 +61,9 @@ public class NoteFactory {
             note.setId(Long.toString(id));
         }
 
-        if (note.getCurrentVersion().getUpdatedAt() == null) note.getCurrentVersion().setUpdatedAt(now);
-
+        if (note.getCurrentVersion().getUpdatedAt() == null) {
+            note.getCurrentVersion().setUpdatedAt(now);
+        }
 
         return note;
     }

@@ -29,7 +29,6 @@ import com.google.gwt.json.client.JSONArray;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.ui.Panel;
 
 
 public class NoteDetailPanel extends Composite {
@@ -150,11 +149,11 @@ public class NoteDetailPanel extends Composite {
 
                         @Override
                         public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Error: " + exception.getMessage());
+                            feedbackLabel.setText("Errore: " + exception.getMessage());
                         }
                     });
                 } catch (RequestException e) {
-                    feedbackLabel.setText("Request error: " + e.getMessage());
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
                 }
             } else {
                 Window.alert("Inserisci un nome per il tag.");
@@ -186,7 +185,7 @@ public class NoteDetailPanel extends Composite {
                     }
                 });
             } catch (RequestException e) {
-                feedbackLabel.setText("Request error: " + e.getMessage());
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             }
         });
 
@@ -256,7 +255,7 @@ public class NoteDetailPanel extends Composite {
                                 newVersion.setTitle(title);
                                 newVersion.setContent(content);
                                 newVersion.setUpdatedAt(new Date());
-                                note.addVersion(newVersion);
+                                note.newVersion(newVersion);
 
                                 
                                 List<String> selectedTags = new ArrayList<>();
@@ -341,7 +340,7 @@ public class NoteDetailPanel extends Composite {
                     }
                 });
             } catch (RequestException e) {
-                feedbackLabel.setText("Request error: " + e.getMessage());
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             }
         });
 
@@ -367,18 +366,18 @@ public class NoteDetailPanel extends Composite {
                             tagListBox.addItem(tag);
                         }
                     } else {
-                        feedbackLabel.setText("Error fetching " + tagLogName + ": " + response.getText());
+                        feedbackLabel.setText("Errore nel caricamento di " + tagLogName + ": " + response.getText());
                     }
                 }
 
                 @Override
                 public void onError(Request request, Throwable exception) {
-                    feedbackLabel.setText("Error: " + exception.getMessage());
+                    feedbackLabel.setText("Errore: " + exception.getMessage());
                 }
             });
             builder.send();
         } catch (RequestException e) {
-            feedbackLabel.setText("Request error: " + e.getMessage());
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
         }
     }
 
@@ -403,7 +402,7 @@ public class NoteDetailPanel extends Composite {
             tagListBox.addItem(newTag, newTag);
             newTagBox.setText("");
         } else {
-            feedbackLabel.setText("Tag già presente.");
+            feedbackLabel.setText("Tag già presente");
         }
     }
 }
