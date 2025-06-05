@@ -53,7 +53,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        session.setUserEmail(user.getEmail());
+        session.setUserEmail(user.getEmail());  // ToDo: da rimuovere
         
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("Login successful");
