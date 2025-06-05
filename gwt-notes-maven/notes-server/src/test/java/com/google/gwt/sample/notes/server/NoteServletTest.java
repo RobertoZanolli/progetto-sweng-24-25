@@ -432,21 +432,18 @@ public class NoteServletTest {
 
     @Test
     public void testHiddenUser() throws Exception {
-        // 1. Creo la nota (proprietario “owner@example.com” con permesso READ)
         Note note = createValidNote("alreadyHiddenId");
         note.setPermission(Permission.READ);
         
-        // 2. Dico che l’utente “hiddenuser@example.com” è già nella lista dei nascosti
         String hiddenUser = "hiddenuser@example.com";
         note.hideForUser(hiddenUser);
         
-        // 3. Invece di fare la doPost(HttpServletRequest), inserisco direttamente la nota nel DB
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
         noteMap.put(note.getId(), note);
         noteDB.commit();
         
-        // 4. Verifico che il proprietario la veda correttamente
+        // Verifico che il proprietario veda correttamente la nota
         session.setUserEmail(note.getOwnerEmail());
         StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
         StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
@@ -455,7 +452,7 @@ public class NoteServletTest {
         String outputOwner = getRespOwner.getOutput();
         assertTrue(outputOwner.contains("alreadyHiddenId")); 
 
-        // 5. Passo al “test user” già nascosto e controllo che NON la veda
+        // Controllo che l'utente nascosto NON la veda
         session.setUserEmail(hiddenUser);
         StubHttpServletRequest getReqHidden = new StubHttpServletRequest("");
         StubHttpServletResponse getRespHidden = new StubHttpServletResponse();
