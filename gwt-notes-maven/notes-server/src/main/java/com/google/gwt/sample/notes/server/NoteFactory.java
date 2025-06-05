@@ -1,9 +1,12 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
+import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
@@ -12,7 +15,7 @@ public class NoteFactory {
     private static final Gson gson = new Gson();
 
     // Factory method standard
-    public static Note create(String title, String content, String[] tags, String ownerEmail) {
+    public static Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new Note();
 
         NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -22,35 +25,40 @@ public class NoteFactory {
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
+        note.setPermission(permission);
         
         Version initialVersion = VersionFactory.create(title, content);
-        note.addVersion(initialVersion);
+        note.newVersion(initialVersion);
         return note;
     }
 
     // Factory method con id
-    public static Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permissions) {
+    public static Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new Note();
         note.setId(id);
         note.setTags(tags);
         note.setOwnerEmail(ownerEmail);
         Date now = new Date();
         note.setCreatedAt(now);
-        note.setPermissions(permissions);
+        note.setPermission(permission);
+
         // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION 
         // QUANDO INVOCHIAMO NELLA HOME GETCURRENTVERSION()
         Version initialVersion = VersionFactory.create(title, content);
-        note.addVersion(initialVersion);
+        note.newVersion(initialVersion);
         return note;
     }
 
     // Factory method da JSON
     public static Note fromJson(String json) {
         Note note = gson.fromJson(json, Note.class);
-        // Gestione date null
-        Date now = new Date();
 
-        if (note.getCreatedAt() == null) note.setCreatedAt(now);
+        // SPOSTARE CONTROLLI QUI (?)
+
+        Date now = new Date();
+        if (note.getCreatedAt() == null) {
+            note.setCreatedAt(now);
+        }
 
         if (note.getId() == null || note.getId().isEmpty()) {
             NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -58,8 +66,24 @@ public class NoteFactory {
             note.setId(Long.toString(id));
         }
 
-        if (note.getCurrentVersion().getUpdatedAt() == null) note.getCurrentVersion().setUpdatedAt(now);
+        if (note.getOwnerEmail() == null) {
+            note.setOwnerEmail(Session.getInstance().getUserEmail());
+        }
 
+        // Imposta il permesso dal JSON o usa default PRIVATE se mancante
+        if (note.getPermission() == null) {
+            try {
+                JsonObject jsonObj = JsonParser.parseString(json).getAsJsonObject();
+                if (jsonObj.has("permission") && !jsonObj.get("permission").isJsonNull()) {
+                    String permString = jsonObj.get("permission").getAsString();
+                    note.setPermission(Permission.valueOf(permString));
+                } else {
+                    note.setPermission(Permission.PRIVATE);
+                }
+            } catch (Exception e) {
+                note.setPermission(Permission.PRIVATE);
+            }
+        }
 
         return note;
     }

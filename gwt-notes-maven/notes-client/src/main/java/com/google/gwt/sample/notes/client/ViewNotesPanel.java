@@ -14,6 +14,7 @@ import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.ui.Button;
@@ -102,8 +103,7 @@ public class ViewNotesPanel extends Composite {
             panel.clear();
             panel.add(new HomePanel());
 
-            Session session = Session.getInstance();
-            session.destroy();
+            Session.getInstance().destroy();
         });
     }
 
@@ -145,21 +145,16 @@ public class ViewNotesPanel extends Composite {
             Label titleLabel = new Label("Titolo: " + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
             notePanel.add(titleLabel);
 
-            Label contentLabel = new Label("Contenuto: " + (note.getCurrentVersion().getContent() != null ? note.getCurrentVersion().getContent() : "N/A"));
-            notePanel.add(contentLabel);
-
             String tags = note.getTags() != null && note.getTags().length > 0 
                 ? String.join(", ", note.getTags()) : "Nessun tag";
             Label tagsLabel = new Label("Tag: " + tags);
             notePanel.add(tagsLabel);
 
-            // CreatedDate
             Label createdAtLabel = new Label("Creata: " + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
             notePanel.add(createdAtLabel);
 
-            // LastModifiedDate
-            Label lastModifiedLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
-            notePanel.add(lastModifiedLabel);
+            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
+            notePanel.add(updatedAtLabel);
 
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
@@ -257,6 +252,10 @@ public class ViewNotesPanel extends Composite {
                     }
                     note.setTags(tags);
                 }
+                // Permission
+                if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
+                    note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
+                }
                 // Versions
                 if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
                     JSONArray versionsArray = obj.get("versions").isArray();
@@ -272,7 +271,7 @@ public class ViewNotesPanel extends Composite {
                             if (versionObj.containsKey("content") && versionObj.get("content").isString() != null) {
                                 version.setContent(versionObj.get("content").isString().stringValue());
                             }
-                            // updatedAt
+                            // UpdatedAt
                             if (versionObj.containsKey("updatedAt") && versionObj.get("updatedAt").isString() != null) {
                                 try {
                                     String dateStr = versionObj.get("updatedAt").isString().stringValue();
@@ -282,7 +281,7 @@ public class ViewNotesPanel extends Composite {
                                     GWT.log("Errore parsing updatedAt: " + e.getMessage());
                                 }
                             }
-                            note.addVersion(version);
+                            note.newVersion(version);
                             System.out.println("Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
                         }
                     }

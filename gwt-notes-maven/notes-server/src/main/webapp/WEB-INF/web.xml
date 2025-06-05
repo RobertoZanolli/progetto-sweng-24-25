@@ -38,6 +38,15 @@
 	</servlet-mapping>
 
 	<servlet>
+		<servlet-name>HideNoteServlet</servlet-name>
+		<servlet-class>com.google.gwt.sample.notes.server.HideNoteServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>HideNoteServlet</servlet-name>
+		<url-pattern>/api/notes/hide</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
 		<servlet-name>LoginServlet</servlet-name>
 		<servlet-class>com.google.gwt.sample.notes.server.LoginServlet</servlet-class>
 	</servlet>

@@ -23,8 +23,12 @@ public class VersionFactory {
     public static Version fromJson(String json) {
         Version version = gson.fromJson(json, Version.class);
 
+        // SPOSTARE CONTROLLI QUI (?)
+
         Date now = new Date();
-        if (version.getUpdatedAt() == null) version.setUpdatedAt(now);
+        if (version.getUpdatedAt() == null) {
+            version.setUpdatedAt(now);
+        }
 
         return version;
     }

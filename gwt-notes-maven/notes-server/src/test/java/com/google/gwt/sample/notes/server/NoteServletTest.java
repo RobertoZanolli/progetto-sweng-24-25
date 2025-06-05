@@ -4,10 +4,12 @@ import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.Session;
+import com.google.gwt.sample.notes.shared.Permission;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.mapdb.HTreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -25,6 +27,7 @@ public class NoteServletTest {
     private Gson gson = new Gson();
     private File tempDbFileNote;
     private File tempDbFileTag;
+    private final Session session = Session.getInstance();
     private final String noteTableName = "notesTest";
     private final String noteLogName = "Note";
     private final String tagTableName = "tagsTest";
@@ -56,6 +59,7 @@ public class NoteServletTest {
         TagDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists()) tempDbFileNote.delete();
         if (tempDbFileTag != null && tempDbFileTag.exists()) tempDbFileTag.delete();
+        session.destroy();
     }
 
     private static class StubHttpServletRequest extends HttpServletRequestWrapper {
@@ -79,9 +83,11 @@ public class NoteServletTest {
         }
         @Override public BufferedReader getReader() { return reader; }
         @Override public String getMethod() { return method; }
-        @Override public String getParameter(String name) {
+        @Override 
+        public String getParameter(String name) {
             if ("id".equals(name)) return idParam;
             if ("permission".equals(name)) return permissionParam;
+            if ("hide".equals(name)) return permissionParam;
             return null;
         }
     }
@@ -100,7 +106,7 @@ public class NoteServletTest {
 
     private Note createValidNote(String id) {
         String[] tags = new String[] { "testTag" };
-        Note note = NoteFactory.create(id, "Test Title", "Test Content", tags, "user@example.com", null);
+        Note note = NoteFactory.create(id, "Test Title", "Test Content", tags, "user@example.com", Permission.PRIVATE);
         return note;
     }
 
@@ -183,6 +189,7 @@ public class NoteServletTest {
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         StubHttpServletRequest getReq = new StubHttpServletRequest("");
         StubHttpServletResponse getResp = new StubHttpServletResponse();
@@ -200,6 +207,7 @@ public class NoteServletTest {
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
@@ -227,12 +235,44 @@ public class NoteServletTest {
     }
 
     @Test
+    public void testCreateNoteWithNullPermission() throws Exception {
+        // Create a note without setting permission (permission should be null)
+        Note note = createValidNote("nullPermId");
+        // Do not call note.setPermission(...) so JSON has no "permission" field
+        String json = gson.toJson(note);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // After creation, default permission should be PRIVATE: owner sees, others do not
+        // Owner GET
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("nullPermId"));
+
+        // Other user GET should not see
+        session.setUserEmail("another@example.com");
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOther = new StubHttpServletResponse();
+        servlet.doGet(getReqOther, getRespOther);
+        assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
+        String outputOther = getRespOther.getOutput();
+        assertFalse(outputOther.contains("nullPermId"));
+    }
+
+    @Test
     public void testUpdateNoteWithNewVersionAndTags() throws Exception {
         Note note = createValidNote("putId");
         String json = gson.toJson(note);
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         Version newVersion = new Version();
         newVersion.setTitle("Updated Title");
@@ -253,6 +293,7 @@ public class NoteServletTest {
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         String putJson = "{\"title\":\"\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
         StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
@@ -269,6 +310,7 @@ public class NoteServletTest {
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"notExistTag\"]}";
         StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
@@ -286,5 +328,137 @@ public class NoteServletTest {
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, putResp.getStatus());
         assertTrue(putResp.getOutput().contains("Note not found."));
+    }
+
+    @Test
+    public void testPermissionPrivate() throws Exception {
+        // Owner can view, others cannot
+        Note note = createValidNote("privateId");
+        note.setPermission(Permission.PRIVATE);
+        String json = gson.toJson(note);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Owner GET
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("privateId"));
+
+        // Other user GET
+        session.setUserEmail("other@example.com");
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOther = new StubHttpServletResponse();
+        servlet.doGet(getReqOther, getRespOther);
+        assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
+        String outputOther = getRespOther.getOutput();
+        assertFalse(outputOther.contains("privateId"));
+    }
+
+    @Test
+    public void testPermissionRead() throws Exception {
+        // Owner creates note with READ permission
+        Note note = createValidNote("readId");
+        note.setPermission(Permission.READ);
+        String json = gson.toJson(note);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Other user GET should see
+        session.setUserEmail("reader@example.com");
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("readId"));
+
+        // Other user PUT should be forbidden
+        String putJson = "{\"title\":\"New\",\"content\":\"New\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
+
+        // Other user DELETE should be forbidden
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, deleteResp.getStatus());
+    }
+
+    @Test
+    public void testPermissionWrite() throws Exception {
+        // Owner creates note with WRITE permission
+        Note note = createValidNote("writeId");
+        note.setPermission(Permission.WRITE);
+        String json = gson.toJson(note);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Other user GET should see
+        session.setUserEmail("writer@example.com");
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("writeId"));
+
+        // Other user PUT should succeed
+        String putJson = "{\"title\":\"UpdatedTitle\",\"content\":\"UpdatedContent\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
+
+        // Other user DELETE should succeed
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+        assertEquals(HttpServletResponse.SC_OK, deleteResp.getStatus());
+    }
+
+    @Test
+    public void testHiddenUser() throws Exception {
+        Note note = createValidNote("alreadyHiddenId");
+        note.setPermission(Permission.READ);
+        
+        String hiddenUser = "hiddenuser@example.com";
+        note.hideForUser(hiddenUser);
+        
+        NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
+        noteMap.put(note.getId(), note);
+        noteDB.commit();
+        
+        // Verifico che il proprietario veda correttamente la nota
+        session.setUserEmail(note.getOwnerEmail());
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("alreadyHiddenId")); 
+
+        // Controllo che l'utente nascosto NON la veda
+        session.setUserEmail(hiddenUser);
+        StubHttpServletRequest getReqHidden = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespHidden = new StubHttpServletResponse();
+        servlet.doGet(getReqHidden, getRespHidden);
+        assertEquals(HttpServletResponse.SC_OK, getRespHidden.getStatus());
+        String outputHidden = getRespHidden.getOutput();
+        assertFalse(outputHidden.contains("alreadyHiddenId"));
     }
 }
