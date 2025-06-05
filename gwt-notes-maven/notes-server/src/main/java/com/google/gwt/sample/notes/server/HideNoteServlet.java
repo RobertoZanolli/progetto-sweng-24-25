@@ -67,22 +67,14 @@ public class HideNoteServlet extends HttpServlet {
             resp.getWriter().write("Missing 'hide' value in body");
             return;
         }
-        boolean hide;
-        try {
-            hide = Boolean.parseBoolean(body);
-        } catch (Exception e) {
+        if (!"true".equals(body) && !"false".equals(body)) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid 'hide' value");
             return;
         }
+        boolean hide = Boolean.parseBoolean(body);
 
         if (hide) {
-            // Solo chi può vedere può nascondere
-            if (!note.getPermission().canView(userEmail, note)) {
-                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                resp.getWriter().write("User does not have permission to hide this note");
-                return;
-            }
             note.hideForUser(userEmail);
             noteMap.put(noteId, note);
             noteDB.commit();
