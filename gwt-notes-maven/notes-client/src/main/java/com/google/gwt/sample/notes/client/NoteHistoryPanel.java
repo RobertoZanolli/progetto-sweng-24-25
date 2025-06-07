@@ -10,11 +10,11 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 
 import java.util.List;
 
-public class NoteHistory extends Composite {
+public class NoteHistoryPanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final Note note;
 
-    public NoteHistory(Note note) {
+    public NoteHistoryPanel(Note note) {
         this.note = note;
         initWidget(panel);
         buildUI();
