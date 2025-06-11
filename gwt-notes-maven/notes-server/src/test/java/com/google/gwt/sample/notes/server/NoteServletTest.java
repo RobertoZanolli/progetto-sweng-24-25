@@ -461,4 +461,56 @@ public class NoteServletTest {
         String outputHidden = getRespHidden.getOutput();
         assertFalse(outputHidden.contains("alreadyHiddenId"));
     }
+
+    @Test
+    public void testOwnerChangePermission() throws Exception {
+        Note note = createValidNote("permId");
+        note.setPermission(Permission.PRIVATE);
+        String json = gson.toJson(note);
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Il proprietario modifica il permesso in READ
+        String putJson = "{\"permission\":\"READ\",\"title\":\"" 
+            + note.getCurrentVersion().getTitle() 
+            + "\",\"content\":\"" 
+            + note.getCurrentVersion().getContent() 
+            + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
+    }
+
+    @Test
+    public void testNonOwnerChangePermission() throws Exception {
+        Note note = createValidNote("permId2");
+        note.setPermission(Permission.READ);
+        String json = gson.toJson(note);
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        session.setUserEmail(note.getOwnerEmail());
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Un utente non proprietario tenta di cambiare il permesso in PRIVATE
+        String nonOwner = "nonOwner@example.com";
+        session.setUserEmail(nonOwner);
+        String putJson = "{\"permission\":\"PRIVATE\",\"title\":\"" 
+            + note.getCurrentVersion().getTitle() 
+            + "\",\"content\":\"" 
+            + note.getCurrentVersion().getContent() 
+            + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
+    }
 }
