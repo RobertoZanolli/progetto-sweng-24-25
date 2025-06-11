@@ -344,11 +344,9 @@ public class NoteServlet extends HttpServlet {
             existingNote.setTags(newTags);
         }
         
-        if (existingNote.isOwner(Session.getInstance().getUserEmail()) && newPermission != null) {
+        if (newPermission != null) {
             existingNote.setPermission(newPermission);
-        }
-        // altrimenti resta vecchio permesso
-        
+        }        
 
         existingNote.newVersion(newVersion);
 
