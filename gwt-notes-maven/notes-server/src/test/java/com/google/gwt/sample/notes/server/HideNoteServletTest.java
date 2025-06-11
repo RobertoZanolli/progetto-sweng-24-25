@@ -2,7 +2,6 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
-import com.google.gwt.sample.notes.shared.Session;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,8 +20,8 @@ import static org.mockito.Mockito.*;
 public class HideNoteServletTest {
     private HideNoteServlet servlet;
     private File tempDbFileNote;
-    private final Session session = Session.getInstance();
-    private NoteDB noteDB;
+/*     private final Session session = Session.getInstance();
+ */    private NoteDB noteDB;
     private HTreeMap<String, Note> noteMap;
 
     @Before
@@ -44,8 +43,8 @@ public class HideNoteServletTest {
         if (servlet != null) servlet.destroy();
         NoteDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists()) tempDbFileNote.delete();
-        session.destroy();
-    }
+/*         session.destroy();
+ */    }
 
     // Stub per simulare HttpServletRequest con body e parametro "id"
     private static class StubHttpServletRequest extends HttpServletRequestWrapper {
@@ -81,8 +80,8 @@ public class HideNoteServletTest {
 
     @Test
     public void testHideNonExistingNote() throws Exception {
-        session.setUserEmail("user@example.com");
-        StubHttpServletRequest req = new StubHttpServletRequest("true", "nonexistent");
+/*         session.setUserEmail("user@example.com");
+ */        StubHttpServletRequest req = new StubHttpServletRequest("true", "nonexistent");
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
@@ -102,8 +101,8 @@ public class HideNoteServletTest {
         noteMap.put(note.getId(), note);
         noteDB.commit();
 
-        session.setUserEmail("user@example.com");
-        StubHttpServletRequest req = new StubHttpServletRequest("true", note.getId());
+/*         session.setUserEmail("user@example.com");
+ */        StubHttpServletRequest req = new StubHttpServletRequest("true", note.getId());
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
 
@@ -124,8 +123,8 @@ public class HideNoteServletTest {
         noteMap.put(note.getId(), note);
         noteDB.commit();
 
-        session.setUserEmail("other@example.com");
-        StubHttpServletRequest req = new StubHttpServletRequest("", note.getId());
+/*         session.setUserEmail("other@example.com");
+ */        StubHttpServletRequest req = new StubHttpServletRequest("", note.getId());
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
 
@@ -147,8 +146,8 @@ public class HideNoteServletTest {
         noteDB.commit();
 
         // Invia un body non booleano
-        session.setUserEmail("reader@example.com");
-        StubHttpServletRequest req = new StubHttpServletRequest("nonboolean", note.getId());
+/*         session.setUserEmail("reader@example.com");
+ */        StubHttpServletRequest req = new StubHttpServletRequest("nonboolean", note.getId());
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
 
@@ -169,8 +168,8 @@ public class HideNoteServletTest {
         noteMap.put(note.getId(), note);
         noteDB.commit();
 
-        session.setUserEmail("reader@example.com");
-        StubHttpServletRequest req = new StubHttpServletRequest("true", note.getId());
+/*         session.setUserEmail("reader@example.com");
+ */        StubHttpServletRequest req = new StubHttpServletRequest("true", note.getId());
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
 

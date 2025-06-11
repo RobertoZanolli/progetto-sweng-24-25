@@ -1,0 +1,13 @@
+com\google\gwt\sample\notes\server\MapDBConstants.class
+com\google\gwt\sample\notes\server\VersionFactory.class
+com\google\gwt\sample\notes\server\NoteFactory.class
+com\google\gwt\sample\notes\server\TagDB.class
+com\google\gwt\sample\notes\server\NoteDB.class
+com\google\gwt\sample\notes\server\LoginServlet.class
+com\google\gwt\sample\notes\server\TagServlet.class
+com\google\gwt\sample\notes\server\NoteServlet.class
+com\google\gwt\sample\notes\server\HideNoteServlet.class
+com\google\gwt\sample\notes\server\UserDB.class
+com\google\gwt\sample\notes\server\AbstractDB.class
+com\google\gwt\sample\notes\server\SessionServlet.class
+com\google\gwt\sample\notes\server\RegisterServlet.class

@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.sample.notes.shared.Permission;
@@ -26,16 +25,16 @@ public class NoteServlet extends HttpServlet {
     private final String tagLogName = "Tag";
     private TagDB tagDB;
     private NoteDB noteDB;
-    private Session session;
+    /*
+     * private Session session;
+     */
 
     public NoteServlet() {
-        this.session = Session.getInstance();
     }
 
     public NoteServlet(File dbFileNote, File dbFileTag) {
         this.dbFileNote = dbFileNote;
         this.dbFileTag = dbFileTag;
-        this.session = Session.getInstance();
     }
 
     public void setDbFileNote(File dbFile) {
@@ -94,6 +93,21 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
+        if (note.getOwnerEmail() == null) {
+            HttpSession session = req.getSession(false);
+            String email = (String) session.getAttribute("email");
+            if (email != null && !email.isEmpty()) {
+                note.setOwnerEmail(email);
+            } else {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write("Owner email cannot be null");
+                return;
+            }
+            /*
+             * throw new IllegalArgumentException("Owner email cannot be null");
+             */
+        }
+
         if (note.getId() == null || note.getId().isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Note ID required");
@@ -112,7 +126,8 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
-        if (note == null || note.getCurrentVersion() == null || note.getCurrentVersion().getTitle() == null || note.getCurrentVersion().getTitle().isEmpty()) {
+        if (note == null || note.getCurrentVersion() == null || note.getCurrentVersion().getTitle() == null
+                || note.getCurrentVersion().getTitle().isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Title required");
             return;
@@ -136,14 +151,27 @@ public class NoteServlet extends HttpServlet {
 
         noteMap.put(note.getId(), note);
         this.noteDB.commit();
-        
+
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(noteLogName + " created");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userEmail = this.session.getUserEmail();
+        HttpSession session = req.getSession(false); // false = non creare nuova sessione
+
+        if (session == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("Utente non autenticato");
+            return;
+        }
+
+        String userEmail = (String) session.getAttribute("email");
+        if (userEmail == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("Utente non autenticato");
+            return;
+        }
 
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
@@ -181,7 +209,9 @@ public class NoteServlet extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userEmail = this.session.getUserEmail();
+        HttpSession session = req.getSession(false); // false = non creare nuova sessione
+
+        String userEmail = session.getAttribute("email") != null ? (String) session.getAttribute("email") : null;
 
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
@@ -220,11 +250,12 @@ public class NoteServlet extends HttpServlet {
         resp.getWriter().write(noteLogName + " with ID " + noteId + " deleted");
     }
 
-
     @SuppressWarnings("deprecation")
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userEmail = this.session.getUserEmail();
+        HttpSession session = req.getSession(false); // false = non creare nuova sessione
+
+        String userEmail = session.getAttribute("email") != null ? (String) session.getAttribute("email") : null;
 
         this.tagDB = TagDB.getInstance(this.dbFileTag);
         this.noteDB = NoteDB.getInstance(this.dbFileNote);

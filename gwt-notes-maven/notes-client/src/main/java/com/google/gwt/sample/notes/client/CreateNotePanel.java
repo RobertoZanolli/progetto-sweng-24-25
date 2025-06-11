@@ -97,6 +97,7 @@ public class CreateNotePanel extends Composite {
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
                         GWT.getHostPageBaseURL() + "api/tags");
                 builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
                         @Override
@@ -157,12 +158,15 @@ public class CreateNotePanel extends Composite {
             JSONObject payload = new JSONObject();
             payload.put("versions", versionsArray);
             payload.put("tags", tagsArray);
+
+            payload.put("email", new JSONString(Session.getInstance().getUserEmail()));
             
             String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
             payload.put("permission", new JSONString(selectedPermission));
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
             builder.setHeader("Content-Type", "application/json");
+            builder.setIncludeCredentials(true);
             try {
                 builder.sendRequest(payload.toString(), new RequestCallback() {
                     @Override
@@ -217,6 +221,7 @@ public class CreateNotePanel extends Composite {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.setCallback(new RequestCallback() {
                 @Override

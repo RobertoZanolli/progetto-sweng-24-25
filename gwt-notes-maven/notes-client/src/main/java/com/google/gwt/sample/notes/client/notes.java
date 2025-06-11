@@ -1,25 +1,41 @@
 package com.google.gwt.sample.notes.client;
 
 import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class notes implements EntryPoint {
     @Override
     public void onModuleLoad() {
+/*         AuthServiceAsync authService = GWT.create(AuthService.class);
+        // Recupero email da sessione
+        authService.getCurrentEmail(new AsyncCallback<String>() {
+            public void onSuccess(String email) {
+                Window.alert("Utente loggato come: " + email);
+                RootPanel.get("mainPanel").add(new HomePanel());
+            }
+
+            public void onFailure(Throwable caught) {
+                Window.alert("Errore nel recupero email");
+                RootPanel.get("mainPanel").add(new ViewNotesPanel());
+
+            }
+        }); */
+
+        RootPanel.get("mainPanel").add(new HomePanel());
         
-        Session session = Session.getInstance();
-        if (session.getUserEmail() == null) {
-            RootPanel.get("mainPanel").add(new HomePanel());
-        } else {
-            RootPanel.get("mainPanel").add(new ViewNotesPanel());
-        }
-        // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single page app
-        //RootPanel.get("mainPanel").add(new CreateNotePanel());
-        //RootPanel.get("mainPanel").add(new RegistrationPanel());
-        //RootPanel.get("mainPanel").add(new ViewNotesPanel());
-        //RootPanel.get("mainPanel").add(new RegistrationPanel());
-        //RootPanel.get("mainPanel").add(new LoginPanel());
+        /*
+         * Session session = Session.getInstance();
+         * if (email == null) {
+         * } else {
+         * RootPanel.get("mainPanel").add(new ViewNotesPanel());
+         * }
+         */ // Vi serve per aggiungere tutti i vari pannelli se vogliamo fare una single
+            // page app
+            // RootPanel.get("mainPanel").add(new CreateNotePanel());
+            // RootPanel.get("mainPanel").add(new RegistrationPanel());
+            // RootPanel.get("mainPanel").add(new ViewNotesPanel());
+            // RootPanel.get("mainPanel").add(new RegistrationPanel());
+            // RootPanel.get("mainPanel").add(new LoginPanel());
 
         /*
          * ToDo: implementare controllo per utente già loggato, così
