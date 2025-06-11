@@ -7,8 +7,20 @@ import java.util.Date;
 
 public class VersionFactory {
     private static final Gson gson = new Gson();
+    private static VersionFactory instance;
 
-    public static Version create(String title, String content) {
+    private VersionFactory(){}
+
+    public synchronized VersionFactory getInstance(){
+        
+        if (instance == null){
+            instance = new VersionFactory();
+        }
+        return instance;
+
+    }
+
+    public static synchronized Version create(String title, String content) {
         Version version = new Version();
 
         version.setTitle(title);
@@ -20,7 +32,7 @@ public class VersionFactory {
     }
 
     // Factory method da JSON
-    public static Version fromJson(String json) {
+    public static synchronized Version fromJson(String json) {
         Version version = gson.fromJson(json, Version.class);
 
         // SPOSTARE CONTROLLI QUI (?)
@@ -34,7 +46,7 @@ public class VersionFactory {
     }
 
     // Per serializzazione
-    public static String toJson(Version version) {
+    public static synchronized String toJson(Version version) {
         return gson.toJson(version);
     }
 }
