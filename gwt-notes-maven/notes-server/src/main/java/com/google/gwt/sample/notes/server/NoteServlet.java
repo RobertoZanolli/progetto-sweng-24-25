@@ -94,19 +94,24 @@ public class NoteServlet extends HttpServlet {
             return;
         }
 
-        if (note.getOwnerEmail() == null) {
-            HttpSession session = req.getSession(false);
-            String email = (String) session.getAttribute("email");
+        HttpSession session = req.getSession(false);
+        String email = (String) session.getAttribute("email");
+
+        if (note.getOwnerEmail() == null || note.getOwnerEmail().isEmpty()) {
             if (email != null && !email.isEmpty()) {
                 note.setOwnerEmail(email);
             } else {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("Owner email cannot be null");
+                resp.getWriter().write("Owner email cannot be null or empty");
                 return;
             }
             /*
              * throw new IllegalArgumentException("Owner email cannot be null");
              */
+        } else if (!note.getOwnerEmail().equals(email)) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Owner email cannot be different from session email");
+            return;
         }
 
         if (note.getId() == null || note.getId().isEmpty()) {
@@ -238,10 +243,12 @@ public class NoteServlet extends HttpServlet {
 
         Note noteToDelete = noteMap.get(noteId);
         // Controllo permessi
-        if (!noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.getWriter().write("User " + userEmail + " does not have permission to delete note " + noteId);
-            return;
+        if (!noteToDelete.getOwnerEmail().equals(userEmail)) {
+            if (!noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                resp.getWriter().write("User " + userEmail + " does not have permission to delete note " + noteId);
+                return;
+            }
         }
 
         noteMap.remove(noteId);
@@ -343,10 +350,10 @@ public class NoteServlet extends HttpServlet {
             }
             existingNote.setTags(newTags);
         }
-        
+
         if (newPermission != null) {
             existingNote.setPermission(newPermission);
-        }        
+        }
 
         existingNote.newVersion(newVersion);
 

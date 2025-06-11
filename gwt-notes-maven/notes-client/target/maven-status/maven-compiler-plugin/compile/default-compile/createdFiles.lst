@@ -6,7 +6,6 @@ com\google\gwt\sample\notes\client\NoteDetailPanel$5.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$3.class
 com\google\gwt\sample\notes\client\NoteDetailPanel.class
 com\google\gwt\sample\notes\client\LoginPanel.class
-com\google\gwt\sample\notes\client\NoteHistory.class
 com\google\gwt\sample\notes\client\RegistrationPanel.class
 com\google\gwt\sample\notes\client\LoginPanel$1.class
 com\google\gwt\sample\notes\client\RegistrationPanel$1.class
@@ -16,6 +15,7 @@ com\google\gwt\sample\notes\client\NoteDetailPanel$1.class
 com\google\gwt\sample\notes\client\notes.class
 com\google\gwt\sample\notes\client\ViewNotesPanel.class
 com\google\gwt\sample\notes\client\HomePanel.class
+com\google\gwt\sample\notes\client\NoteHistoryPanel.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$6.class
 com\google\gwt\sample\notes\client\CreateNotePanel$3.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$2.class
