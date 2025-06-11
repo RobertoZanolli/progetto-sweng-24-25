@@ -50,6 +50,7 @@ public class ViewNotesPanel extends Composite {
     private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
+        
         panel.add(new Label("Utente loggato: " + Session.getInstance().getUserEmail()));
 
 
@@ -135,9 +136,9 @@ public class ViewNotesPanel extends Composite {
     // Mostra le note filtrate
     private void renderNotes() {
         // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
-        if (panel.getWidgetCount() > 4) {
-            while (panel.getWidgetCount() > 4) {
-                panel.remove(4);
+        if (panel.getWidgetCount() > 5) {
+            while (panel.getWidgetCount() > 5) {
+                panel.remove(5);
             }
         }
 
