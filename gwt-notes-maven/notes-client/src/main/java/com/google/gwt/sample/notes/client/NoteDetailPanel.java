@@ -124,8 +124,8 @@ public class NoteDetailPanel extends Composite {
         buttonPanel.add(editButton);
         buttonPanel.add(duplicateButton);
         buttonPanel.add(viewHistory);
-        buttonPanel.add(backButton);
         buttonPanel.add(hideButton);
+        buttonPanel.add(backButton);
         panel.add(buttonPanel);
         panel.add(feedbackLabel);
     }
@@ -218,7 +218,10 @@ public class NoteDetailPanel extends Composite {
                     tagListBox.setEnabled(true);
                     newTagBox.setEnabled(true);
                     addTagButton.setEnabled(true);
-                    permissionListBox.setEnabled(true);
+
+                    if(note.isOwner(Session.getInstance().getUserEmail())){
+                        permissionListBox.setEnabled(true);
+                    }
                     editButton.setText("Salva modifiche");
 
                     String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
@@ -384,7 +387,7 @@ public class NoteDetailPanel extends Composite {
 
         viewHistory.addClickHandler(event -> {
             panel.clear();
-            panel.add(new NoteHistory(note));
+            panel.add(new NoteHistoryPanel(note));
         });
 
         hideButton.addClickHandler(event -> {

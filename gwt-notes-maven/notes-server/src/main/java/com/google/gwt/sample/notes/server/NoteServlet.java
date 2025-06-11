@@ -81,6 +81,7 @@ public class NoteServlet extends HttpServlet {
         try {
             String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             note = NoteFactory.fromJson(strNote);
+
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());
@@ -342,9 +343,12 @@ public class NoteServlet extends HttpServlet {
             }
             existingNote.setTags(newTags);
         }
-        if (newPermission != null) {
+        
+        if (existingNote.isOwner(Session.getInstance().getUserEmail()) && newPermission != null) {
             existingNote.setPermission(newPermission);
         }
+        // altrimenti resta vecchio permesso
+        
 
         existingNote.newVersion(newVersion);
 

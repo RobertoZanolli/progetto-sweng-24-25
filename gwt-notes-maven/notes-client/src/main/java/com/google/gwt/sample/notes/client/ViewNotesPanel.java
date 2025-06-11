@@ -50,6 +50,9 @@ public class ViewNotesPanel extends Composite {
     private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
+        panel.add(new Label("Utente loggato: " + Session.getInstance().getUserEmail()));
+
+
         searchPanel.setSpacing(10);
         searchBox.getElement().setPropertyString("placeholder", "Cerca...");
         searchPanel.add(new Label("Cerca per parole chiave: "));
@@ -162,6 +165,8 @@ public class ViewNotesPanel extends Composite {
                     : "Data non disponibile"));
             notePanel.add(updatedAtLabel);
 
+            Label ownerLabel= new Label("Proprietario: "+ note.getOwnerEmail());
+            notePanel.add(ownerLabel);
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
             noteDetailButton.addClickHandler(event -> {

@@ -66,6 +66,14 @@ public class NoteFactory {
             note.setId(Long.toString(id));
         }
 
+/*         if (note.getOwnerEmail() == null) {
+            note.setOwnerEmail();
+        } */
+        
+        if(note.getCurrentVersion().getUpdatedAt()==null){
+            note.getCurrentVersion().setUpdatedAt(now);
+        }
+
         // Imposta il permesso dal JSON o usa default PRIVATE se mancante
         if (note.getPermission() == null) {
             try {
