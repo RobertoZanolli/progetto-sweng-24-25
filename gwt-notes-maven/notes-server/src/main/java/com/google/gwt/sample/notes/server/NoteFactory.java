@@ -13,9 +13,21 @@ import java.util.Date;
 
 public class NoteFactory {
     private static final Gson gson = new Gson();
+    private static NoteFactory instance;
+
+    private NoteFactory(){}
+
+    public synchronized NoteFactory getInstance(){
+
+        if (instance == null){
+            instance = new NoteFactory();
+        }
+        return instance;
+
+    }
 
     // Factory method standard
-    public static Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
+    public static synchronized Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new Note();
 
         NoteIdGenerator generator = new NoteIdGenerator(1);
@@ -33,7 +45,7 @@ public class NoteFactory {
     }
 
     // Factory method con id
-    public static Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
+    public static synchronized Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new Note();
         note.setId(id);
         note.setTags(tags);
@@ -50,7 +62,7 @@ public class NoteFactory {
     }
 
     // Factory method da JSON
-    public static Note fromJson(String json) {
+    public static synchronized Note fromJson(String json) {
         Note note = gson.fromJson(json, Note.class);
 
         // SPOSTARE CONTROLLI QUI (?)
@@ -93,7 +105,7 @@ public class NoteFactory {
     }
 
     // Per serializzazione
-    public static String toJson(Note note) {
+    public static synchronized String toJson(Note note) {
         return gson.toJson(note);
     }
 }
