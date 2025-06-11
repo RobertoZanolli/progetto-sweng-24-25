@@ -3,8 +3,5 @@
 Progetto di laboratorio del corso di Ingegneria del Software, corso di laurea in Informatica per il Management, Università di Bologna, 2025.
 
 per loggarsi possono essere usati i seguenti account:
-- mail: admin@gmail.com
-- password: admin
-
-- mail: pippo@gmail.com
-- password: pippo
+- mail: user@gmail.com
+- password: user1234
