@@ -5,7 +5,6 @@ import com.google.gwt.http.client.*;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
-import com.google.gwt.sample.notes.shared.Session;
 
 public class LoginPanel extends VerticalPanel {
     private final TextBox emailBox = new TextBox();
@@ -59,6 +58,7 @@ public class LoginPanel extends VerticalPanel {
 
         RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/login");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.sendRequest(payload.toString(), new RequestCallback() {
                 @Override
@@ -66,13 +66,14 @@ public class LoginPanel extends VerticalPanel {
                     loginButton.setEnabled(true);
                     if (response.getStatusCode() == Response.SC_OK) {
                         feedbackLabel.setText("Login successful!");
-                        Session.getInstance().setUserEmail(email);
+                        Session.getInstance().setUserEmail(email); // salva la mail
                         RootPanel.get("mainPanel").clear();
                         RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {
                         feedbackLabel.setText("Login fallito: utente non registrato");
                     }
                 }
+
                 @Override
                 public void onError(Request request, Throwable exception) {
                     loginButton.setEnabled(true);

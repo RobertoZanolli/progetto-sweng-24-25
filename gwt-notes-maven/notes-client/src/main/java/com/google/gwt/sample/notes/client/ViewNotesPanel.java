@@ -15,7 +15,6 @@ import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
@@ -38,7 +37,7 @@ public class ViewNotesPanel extends Composite {
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
     private final Button exitButton = new Button("Esci");
-    
+
     @SuppressWarnings("deprecation")
     private final ListBox tagListBox = new ListBox(true);
 
@@ -97,7 +96,7 @@ public class ViewNotesPanel extends Composite {
             }
             applyFilters();
         });
-        
+
         createNoteButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new CreateNotePanel());
@@ -106,29 +105,31 @@ public class ViewNotesPanel extends Composite {
         exitButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new HomePanel());
-
-            Session.getInstance().destroy();
         });
     }
 
     private void applyFilters() {
         filteredNotes = notes.stream()
-            .filter(n -> {
-                // Filtro per keyword
-                String title = n.getCurrentVersion().getTitle() != null ? n.getCurrentVersion().getTitle().toLowerCase() : "";
-                String content = n.getCurrentVersion().getContent() != null ? n.getCurrentVersion().getContent().toLowerCase() : "";
-                boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword) || content.contains(currentKeyword);
-                
-                // Filtro per tag
-                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
-                boolean matchesTags = currentSelectedTags.isEmpty() ||
-                                      currentSelectedTags.stream().anyMatch(tag ->
-                                          java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag))
-                                      );
-                
-                return matchesKeyword && matchesTags;
-            })
-            .collect(Collectors.toList());
+                .filter(n -> {
+                    // Filtro per keyword
+                    String title = n.getCurrentVersion().getTitle() != null
+                            ? n.getCurrentVersion().getTitle().toLowerCase()
+                            : "";
+                    String content = n.getCurrentVersion().getContent() != null
+                            ? n.getCurrentVersion().getContent().toLowerCase()
+                            : "";
+                    boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword)
+                            || content.contains(currentKeyword);
+
+                    // Filtro per tag
+                    String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                    boolean matchesTags = currentSelectedTags.isEmpty() ||
+                            currentSelectedTags.stream().anyMatch(
+                                    tag -> java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag)));
+
+                    return matchesKeyword && matchesTags;
+                })
+                .collect(Collectors.toList());
         renderNotes();
     }
 
@@ -146,18 +147,23 @@ public class ViewNotesPanel extends Composite {
             VerticalPanel notePanel = new VerticalPanel();
             notePanel.setSpacing(5);
 
-            Label titleLabel = new Label("Titolo: " + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
+            Label titleLabel = new Label("Titolo: "
+                    + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
             notePanel.add(titleLabel);
 
-            String tags = note.getTags() != null && note.getTags().length > 0 
-                ? String.join(", ", note.getTags()) : "Nessun tag";
+            String tags = note.getTags() != null && note.getTags().length > 0
+                    ? String.join(", ", note.getTags())
+                    : "Nessun tag";
             Label tagsLabel = new Label("Tag: " + tags);
             notePanel.add(tagsLabel);
 
-            Label createdAtLabel = new Label("Creata: " + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
+            Label createdAtLabel = new Label("Creata: "
+                    + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
             notePanel.add(createdAtLabel);
 
-            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
+            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null
+                    ? note.getCurrentVersion().getUpdatedAt().toString()
+                    : "Data non disponibile"));
             notePanel.add(updatedAtLabel);
 
             Label ownerLabel= new Label("Proprietario: "+ note.getOwnerEmail());
@@ -183,7 +189,7 @@ public class ViewNotesPanel extends Composite {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/notes");
         builder.setHeader("Content-Type", "application/json");
-
+        builder.setIncludeCredentials(true);
         try {
             builder.sendRequest(null, new RequestCallback() {
                 @Override
@@ -288,7 +294,8 @@ public class ViewNotesPanel extends Composite {
                                 }
                             }
                             note.newVersion(version);
-                            System.out.println("Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
+                            System.out.println(
+                                    "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
                         }
                     }
                 }
@@ -303,6 +310,7 @@ public class ViewNotesPanel extends Composite {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.setCallback(new RequestCallback() {
                 @Override

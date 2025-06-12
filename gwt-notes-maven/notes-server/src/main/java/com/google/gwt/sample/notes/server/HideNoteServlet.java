@@ -1,27 +1,28 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Session;
+import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
 import java.io.*;
 
-public class HideNoteServlet extends HttpServlet {
+public class HideNoteServlet extends RemoteServiceServlet {
     private File dbFileNote = null;
     private final String noteTableName = "notes";
     private NoteDB noteDB;
-    private Session session;
 
     public HideNoteServlet() {
-        this.session = Session.getInstance();
-    }
+        /*
+         * this.session = Session.getInstance();
+         */ }
 
     public HideNoteServlet(File dbFileNote) {
         this.dbFileNote = dbFileNote;
-        this.session = Session.getInstance();
-    }
+        /*
+         * this.session = Session.getInstance();
+         */ }
 
     public void setDbFileNote(File dbFile) {
         this.dbFileNote = dbFile;
@@ -34,7 +35,11 @@ public class HideNoteServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userEmail = this.session.getUserEmail();
+/*         HttpSession session = getThreadLocalRequest().getSession();
+ */
+
+        HttpSession session = req.getSession();
+        String userEmail = session.getAttribute("email") != null ? (String) session.getAttribute("email") : null;
         this.noteDB = NoteDB.getInstance(this.dbFileNote);
         HTreeMap<String, Note> noteMap = noteDB.getMap();
 
