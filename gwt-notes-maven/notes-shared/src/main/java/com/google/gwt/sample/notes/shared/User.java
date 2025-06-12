@@ -1,6 +1,8 @@
 package com.google.gwt.sample.notes.shared;
 
-public interface User {
+import java.io.Serializable;
+
+public interface User extends Serializable {
     String getEmail();
     String getPassword();
     void setEmail(String email);

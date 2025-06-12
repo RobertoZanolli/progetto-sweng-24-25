@@ -3,8 +3,9 @@ package com.google.gwt.sample.notes.shared;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.io.Serializable;
 
-public interface Note {
+public interface Note extends Serializable {
     String getId();
     void setId(String id);
 

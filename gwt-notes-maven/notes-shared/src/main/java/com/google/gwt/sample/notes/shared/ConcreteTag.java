@@ -1,8 +1,6 @@
 package com.google.gwt.sample.notes.shared;
 
-import java.io.Serializable;
-
-public class ConcreteTag implements Serializable, Tag {
+public class ConcreteTag implements Tag {
     private String name;
 
     public ConcreteTag() {}

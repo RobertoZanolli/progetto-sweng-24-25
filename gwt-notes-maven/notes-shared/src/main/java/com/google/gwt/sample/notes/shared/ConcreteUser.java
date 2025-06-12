@@ -1,13 +1,6 @@
 package com.google.gwt.sample.notes.shared;
 
-import java.io.Serializable;
-
-/*Classe User:
- * - email
- * - password 
- *  L'utente ha mail e password,  
- */
-public class ConcreteUser implements Serializable, User {
+public class ConcreteUser implements User {
     private String email;
     private String password ;
 

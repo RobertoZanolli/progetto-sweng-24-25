@@ -1,28 +1,23 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
 import java.io.*;
 
-public class HideNoteServlet extends RemoteServiceServlet {
+public class HideNoteServlet extends HttpServlet {
     private File dbFileNote = null;
     private final String noteTableName = "notes";
     private NoteDB noteDB;
 
-    public HideNoteServlet() {
-        /*
-         * this.session = Session.getInstance();
-         */ }
+    public HideNoteServlet() {}
 
     public HideNoteServlet(File dbFileNote) {
         this.dbFileNote = dbFileNote;
-        /*
-         * this.session = Session.getInstance();
-         */ }
+    }
 
     public void setDbFileNote(File dbFile) {
         this.dbFileNote = dbFile;
