@@ -9,12 +9,18 @@ import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.sample.notes.shared.Permission;
 
+
 import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
@@ -301,9 +307,43 @@ public class NoteServlet extends HttpServlet {
         Version newVersion = null;
         String[] newTags = null;
         Permission newPermission = null;
+
         try {
             String strVersion = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
             JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
+
+            // Estrai lastKnownUpdate dal JSON e convertilo
+            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
+            LocalDateTime lastKnownUpdate = null;
+
+            if (lastKnownUpdateStr != null) {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    lastKnownUpdate = LocalDateTime.parse(lastKnownUpdateStr, formatter);
+                } catch (DateTimeParseException e) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write("Formato data non valido: " + lastKnownUpdateStr);
+                    return;
+                }
+            }
+
+            // Recupera data aggiornata attuale dal DB
+            Date dbUpdatedAt = noteToUpdate.getCurrentVersion().getUpdatedAt();
+            LocalDateTime dbUpdatedAtLDT = LocalDateTime.parse(
+            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        );
+
+            // Debug log
+            System.out.println(">>> Client lastKnownUpdate: " + lastKnownUpdate);
+            System.out.println(">>> DB    currentUpdatedAt: " + dbUpdatedAtLDT);
+
+            // Confronto ignorando i millisecondi
+            if (lastKnownUpdate == null || !lastKnownUpdate.equals(dbUpdatedAtLDT)) {
+                resp.setStatus(HttpServletResponse.SC_CONFLICT);
+                resp.getWriter().write("Nota modificata da un altro utente. Ricarica.");
+                return;
+            }
 
             // Aggiorna tag se presenti nel JSON
             if (jsonObj.has("tags") && jsonObj.get("tags").isJsonArray()) {
