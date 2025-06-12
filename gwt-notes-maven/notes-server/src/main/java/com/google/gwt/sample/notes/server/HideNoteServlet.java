@@ -30,9 +30,6 @@ public class HideNoteServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-/*         HttpSession session = getThreadLocalRequest().getSession();
- */
-
         HttpSession session = req.getSession();
         String userEmail = session.getAttribute("email") != null ? (String) session.getAttribute("email") : null;
         this.noteDB = NoteDB.getInstance(this.dbFileNote);

@@ -1,9 +1,12 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.ConcreteNote;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
@@ -12,13 +15,16 @@ import com.google.gwt.sample.notes.shared.Version;
 import java.util.Date;
 
 public class NoteFactory {
-    private static final Gson gson = new Gson();
+
+    private static final Gson gson = new GsonBuilder()
+        .registerTypeAdapter(Version.class, (JsonDeserializer<Version>) (json, typeOfT, context) ->
+            context.deserialize(json, ConcreteVersion.class))
+        .create();
     private static NoteFactory instance;
 
     private NoteFactory(){}
 
-    public synchronized NoteFactory getInstance(){
-
+    public static synchronized NoteFactory getInstance(){
         if (instance == null){
             instance = new NoteFactory();
         }
@@ -63,7 +69,7 @@ public class NoteFactory {
 
     // Factory method da JSON
     public static synchronized Note fromJson(String json) {
-        Note note = gson.fromJson(json, Note.class);
+        Note note = gson.fromJson(json, ConcreteNote.class);
 
         // SPOSTARE CONTROLLI QUI (?)
 
@@ -77,10 +83,6 @@ public class NoteFactory {
             long id = generator.nextId();
             note.setId(Long.toString(id));
         }
-
-/*         if (note.getOwnerEmail() == null) {
-            note.setOwnerEmail();
-        } */
         
         if(note.getCurrentVersion().getUpdatedAt()==null){
             note.getCurrentVersion().setUpdatedAt(now);

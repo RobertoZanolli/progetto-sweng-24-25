@@ -2,6 +2,7 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gson.Gson;
+
 import org.mapdb.HTreeMap;
 
 import javax.servlet.ServletException;
@@ -9,7 +10,6 @@ import javax.servlet.http.*;
 import java.io.*;
 
 public class TagServlet extends HttpServlet {
-    private static final Gson gson = new Gson();
     private File dbFile = null;
     private final String tagTableName = "tags";
     private final String tagLogName = "Tag";
@@ -44,7 +44,8 @@ public class TagServlet extends HttpServlet {
 
         Tag tag = null;
         try {
-            tag = gson.fromJson(req.getReader(), Tag.class);
+            String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            tag = TagFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + tagLogName + " data: " + e.getMessage());

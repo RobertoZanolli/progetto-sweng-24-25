@@ -79,9 +79,8 @@ public class NoteServlet extends HttpServlet {
 
         Note note = null;
         try {
-            String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            note = NoteFactory.fromJson(strNote);
-
+            String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            note = NoteFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());

@@ -12,7 +12,7 @@ public class VersionFactory {
 
     private VersionFactory(){}
 
-    public synchronized VersionFactory getInstance(){
+    public static synchronized VersionFactory getInstance(){
         
         if (instance == null){
             instance = new VersionFactory();
@@ -34,9 +34,7 @@ public class VersionFactory {
 
     // Factory method da JSON
     public static synchronized Version fromJson(String json) {
-        Version version = gson.fromJson(json, Version.class);
-
-        // SPOSTARE CONTROLLI QUI (?)
+        Version version = gson.fromJson(json, ConcreteVersion.class);
 
         Date now = new Date();
         if (version.getUpdatedAt() == null) {
