@@ -9,7 +9,6 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ import com.google.gwt.json.client.JSONArray;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.i18n.client.DateTimeFormat;
-
 
 public class NoteDetailPanel extends Composite {
 
@@ -55,7 +53,7 @@ public class NoteDetailPanel extends Composite {
     private final ListBox permissionListBox = new ListBox();
     private boolean isEditMode = false;
     private final DateTimeFormat dateFormat = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-
+    private String email = Session.getInstance().getUserEmail();
 
     public NoteDetailPanel(Note note) {
         this.note = note;
@@ -74,7 +72,8 @@ public class NoteDetailPanel extends Composite {
         panel.add(titleBox);
 
         panel.add(new Label("Contenuto:"));
-        contentBox.setText(note.getCurrentVersion().getContent() != null ? note.getCurrentVersion().getContent() : "N/A");
+        contentBox
+                .setText(note.getCurrentVersion().getContent() != null ? note.getCurrentVersion().getContent() : "N/A");
         contentBox.setVisibleLines(5);
         contentBox.setCharacterWidth(40);
         contentBox.setEnabled(false); // Inizialmente non modificabile
@@ -88,8 +87,9 @@ public class NoteDetailPanel extends Composite {
         permissionListBox.setEnabled(false); // Inizialmente non modificabile
         panel.add(permissionListBox);
 
-        String tags = note.getTags() != null && note.getTags().length > 0 
-            ? String.join(", ", note.getTags()) : "Nessun tag";
+        String tags = note.getTags() != null && note.getTags().length > 0
+                ? String.join(", ", note.getTags())
+                : "Nessun tag";
         tagsLabel.setText("Tag: " + tags);
         panel.add(tagsLabel);
 
@@ -106,17 +106,17 @@ public class NoteDetailPanel extends Composite {
         newTagBox.setEnabled(false);
         addTagButton.setEnabled(false);
 
-
         // CreatedDate
-        createdDateLabel.setText("Creata: " + (note.getCreatedAt() != null 
-            ? note.getCreatedAt().toString() : "Data non disponibile"));
+        createdDateLabel.setText("Creata: " + (note.getCreatedAt() != null
+                ? note.getCreatedAt().toString()
+                : "Data non disponibile"));
         panel.add(createdDateLabel);
 
         // Questa è la data dell'ultima versione in realtà
-        lastModifiedDateLabel.setText("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null 
-            ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
+        lastModifiedDateLabel.setText("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null
+                ? note.getCurrentVersion().getUpdatedAt().toString()
+                : "Data non disponibile"));
         panel.add(lastModifiedDateLabel);
-
 
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
@@ -145,6 +145,7 @@ public class NoteDetailPanel extends Composite {
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
                         GWT.getHostPageBaseURL() + "api/tags");
                 builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
                         @Override
@@ -174,32 +175,32 @@ public class NoteDetailPanel extends Composite {
         });
 
         deleteButton.addClickHandler(event -> {
-
-            if(note.getPermission().canEdit(Session.getInstance().getUserEmail(), note)) {
+            if (note.getPermission().canEdit(email, note)) {
 
                 String noteId = note.getId();
 
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + noteId;
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.DELETE, url);
                 builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(null, new RequestCallback() {
                         @Override
                         public void onResponseReceived(Request request, Response response) {
                             if (response.getStatusCode() == Response.SC_OK) {
                                 feedbackLabel.setText("Nota eliminata!");
-                            panel.clear();
-                            panel.add(new ViewNotesPanel());
-                        } else {
-                            feedbackLabel.setText("Eliminazione fallita: " + response.getText());
+                                panel.clear();
+                                panel.add(new ViewNotesPanel());
+                            } else {
+                                feedbackLabel.setText("Eliminazione fallita: " + response.getText());
+                            }
                         }
-                    }
 
-                    @Override
-                    public void onError(Request request, Throwable exception) {
-                        feedbackLabel.setText("Errore durante l'eliminazione: " + exception.getMessage());
-                    }
-                });
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore durante l'eliminazione: " + exception.getMessage());
+                        }
+                    });
                 } catch (RequestException e) {
                     feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
                 }
@@ -208,10 +209,9 @@ public class NoteDetailPanel extends Composite {
             }
         });
 
-
         editButton.addClickHandler(event -> {
             if (!isEditMode) {
-                if(note.getPermission().canEdit(Session.getInstance().getUserEmail(), note)) {
+                if (note.getPermission().canEdit(email, note)) {
                     isEditMode = true;
                     titleBox.setEnabled(true);
                     contentBox.setEnabled(true);
@@ -240,7 +240,7 @@ public class NoteDetailPanel extends Composite {
                     Window.alert("Non hai i permessi necessari per modificare questa nota.");
                 }
             } else {
-                
+
                 String title = titleBox.getText().trim();
                 String content = contentBox.getText().trim();
 
@@ -272,7 +272,7 @@ public class NoteDetailPanel extends Composite {
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
                 builder.setHeader("Content-Type", "application/json");
-
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
                         @Override
@@ -280,14 +280,12 @@ public class NoteDetailPanel extends Composite {
                             if (response.getStatusCode() == Response.SC_OK) {
                                 feedbackLabel.setText("Nota modificata con successo!");
 
-                               
                                 Version newVersion = new Version();
                                 newVersion.setTitle(title);
                                 newVersion.setContent(content);
                                 newVersion.setUpdatedAt(new Date());
                                 note.newVersion(newVersion);
 
-                                
                                 List<String> selectedTags = new ArrayList<>();
                                 for (int i = 0; i < tagListBox.getItemCount(); i++) {
                                     if (tagListBox.isItemSelected(i)) {
@@ -299,10 +297,10 @@ public class NoteDetailPanel extends Composite {
                                 String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
                                 tagsLabel.setText("Tag: " + tagsString);
 
-                                
                                 titleBox.setText(newVersion.getTitle());
                                 contentBox.setText(newVersion.getContent());
-                                lastModifiedDateLabel.setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
+                                lastModifiedDateLabel
+                                        .setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
 
                                 isEditMode = false;
                                 titleBox.setEnabled(false);
@@ -330,7 +328,7 @@ public class NoteDetailPanel extends Composite {
 
         duplicateButton.addClickHandler(event -> {
 
-            if(note.getPermission().canEdit(Session.getInstance().getUserEmail(), note)) {
+            if (note.getPermission().canEdit(email, note)) {
                 JSONObject payload = new JSONObject();
 
                 // Duplico tutte le versioni
@@ -338,7 +336,8 @@ public class NoteDetailPanel extends Composite {
                 for (int i = 0; i < note.getAllVersions().size(); i++) {
                     Version v = note.getAllVersions().get(i);
                     JSONObject vObj = new JSONObject();
-                    vObj.put("title", new JSONString((i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
+                    vObj.put("title", new JSONString(
+                            (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
                     vObj.put("content", new JSONString(v.getContent()));
                     if (v.getUpdatedAt() != null) {
                         vObj.put("updatedAt", new JSONString(dateFormat.format(v.getUpdatedAt())));
@@ -352,13 +351,15 @@ public class NoteDetailPanel extends Composite {
                     tagsArray.set(i, new JSONString(noteTags[i]));
                 }
                 payload.put("tags", tagsArray);
-                payload.put("ownerEmail", new JSONString(Session.getInstance().getUserEmail() ));
+                payload.put("ownerEmail", new JSONString(note.getOwnerEmail()));
 
                 String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
                 payload.put("permission", new JSONString(selectedPermission));
 
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                        GWT.getHostPageBaseURL() + "api/notes");
                 builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
                         @Override
@@ -390,7 +391,7 @@ public class NoteDetailPanel extends Composite {
         });
 
         hideButton.addClickHandler(event -> {
-            if (note.isOwner(Session.getInstance().getUserEmail())) {
+            if (note.isOwner(email)) {
                 Window.alert("Il proprietario della nota non può rimuoversi dalla visualizzazione della nota.");
                 return;
             }
@@ -398,6 +399,7 @@ public class NoteDetailPanel extends Composite {
             String hideUrl = GWT.getHostPageBaseURL() + "api/notes/hide?id=" + note.getId();
             RequestBuilder hideBuilder = new RequestBuilder(RequestBuilder.PUT, hideUrl);
             hideBuilder.setHeader("Content-Type", "text/plain");
+            hideBuilder.setIncludeCredentials(true);
             try {
                 hideBuilder.sendRequest("true", new RequestCallback() {
                     @Override
@@ -410,6 +412,7 @@ public class NoteDetailPanel extends Composite {
                             feedbackLabel.setText("Errore: " + response.getStatusText());
                         }
                     }
+
                     @Override
                     public void onError(Request request, Throwable exception) {
                         feedbackLabel.setText("Errore: " + exception.getMessage());
@@ -425,6 +428,7 @@ public class NoteDetailPanel extends Composite {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.setCallback(new RequestCallback() {
                 @Override

@@ -1,4 +1,4 @@
-package com.google.gwt.sample.notes.shared;
+package com.google.gwt.sample.notes.client;
 public class Session {
     private static Session instance;
     private String userEmail;

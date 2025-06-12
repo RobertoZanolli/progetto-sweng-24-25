@@ -1,7 +1,6 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.mapdb.HTreeMap;
@@ -13,7 +12,6 @@ public class LoginServlet extends HttpServlet {
     private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
-    private Session session;
 
     public LoginServlet() {}
     public LoginServlet(String dbPath) { this.dbPath = dbPath; }
@@ -22,7 +20,6 @@ public class LoginServlet extends HttpServlet {
     public void init() {
         String pathToUse = dbPath != null ? dbPath : new java.io.File("users.db").getAbsolutePath();
         userDB = UserDB.getInstance(new File(pathToUse));
-        session = Session.getInstance();
     }
 
     @Override
@@ -53,7 +50,8 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        session.setUserEmail(user.getEmail());  // ToDo: da rimuovere
+        HttpSession session = req.getSession(true);
+        session.setAttribute("email", user.getEmail());
         
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("Login successful");

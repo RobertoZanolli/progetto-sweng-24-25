@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
-import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
@@ -38,7 +37,7 @@ public class NoteFactory {
         Date now = new Date();
         note.setCreatedAt(now);
         note.setPermission(permission);
-        
+
         Version initialVersion = VersionFactory.create(title, content);
         note.newVersion(initialVersion);
         return note;
@@ -54,7 +53,7 @@ public class NoteFactory {
         note.setCreatedAt(now);
         note.setPermission(permission);
 
-        // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION 
+        // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION
         // QUANDO INVOCHIAMO NELLA HOME GETCURRENTVERSION()
         Version initialVersion = VersionFactory.create(title, content);
         note.newVersion(initialVersion);
@@ -78,9 +77,9 @@ public class NoteFactory {
             note.setId(Long.toString(id));
         }
 
-        if (note.getOwnerEmail() == null) {
-            note.setOwnerEmail(Session.getInstance().getUserEmail());
-        }
+/*         if (note.getOwnerEmail() == null) {
+            note.setOwnerEmail();
+        } */
         
         if(note.getCurrentVersion().getUpdatedAt()==null){
             note.getCurrentVersion().setUpdatedAt(now);
