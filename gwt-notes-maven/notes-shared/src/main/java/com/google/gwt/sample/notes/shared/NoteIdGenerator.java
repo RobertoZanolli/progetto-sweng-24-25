@@ -1,6 +1,6 @@
 package com.google.gwt.sample.notes.shared;
 
-public class NoteIdGenerator {
+public class NoteIdGenerator implements IdGenerator {
     private static final long EPOCH = 1700000000000L; // Custom start timestamp
     private static final int MACHINE_ID_BITS = 10;
     private static final int SEQUENCE_BITS = 12;
@@ -19,6 +19,7 @@ public class NoteIdGenerator {
         this.machineId = machineId;
     }
 
+    @Override
     public synchronized long nextId() {
         long timestamp = timeGen();
 

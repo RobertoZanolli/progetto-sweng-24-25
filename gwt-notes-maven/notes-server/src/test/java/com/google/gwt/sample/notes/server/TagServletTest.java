@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.ConcreteTag;
 import com.google.gwt.sample.notes.shared.Tag;
 import org.junit.After;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public class TagServletTest {
 
     // --- Helper for tag creation ---
     private Tag createValidTag(String name) {
-        return new Tag(name);
+        return new ConcreteTag(name);
     }
 
     // --- Tests ---
@@ -123,8 +124,8 @@ public class TagServletTest {
 
     @Test
     public void testCreateTagWithInvalidName() throws Exception {
-        Tag tag1 = new Tag();
-        Tag tag2 = new Tag("");
+        Tag tag1 = new ConcreteTag();
+        Tag tag2 = new ConcreteTag("");
         for (Tag tag : new Tag[] { tag1, tag2 }) {
             String json = gson.toJson(tag);
             StubHttpServletRequest req = new StubHttpServletRequest(json);

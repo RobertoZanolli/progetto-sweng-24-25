@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.ConcreteUser;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.junit.After;
@@ -85,7 +86,7 @@ public class LoginServletTest {
 
     @Test
     public void testSuccessfulLogin() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("testuser@test.it");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -101,7 +102,7 @@ public class LoginServletTest {
 
     @Test
     public void testInvalidCredentials() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("testuser@test.it");
         user.setPassword("wrongpassword");
         String json = gson.toJson(user);
@@ -116,7 +117,7 @@ public class LoginServletTest {
 
     @Test
     public void testNonExistentUser() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("nonexistent@test.it");
         user.setPassword("password123");
         String json = gson.toJson(user);

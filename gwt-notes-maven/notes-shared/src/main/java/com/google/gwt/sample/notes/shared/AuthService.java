@@ -6,4 +6,3 @@ public interface AuthService extends RemoteService {
     void login(String email);
     String getCurrentEmail();
 }
-

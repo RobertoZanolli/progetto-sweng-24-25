@@ -2,8 +2,8 @@ package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteTag;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Permission;
 
 import org.junit.After;
@@ -56,7 +56,7 @@ public class NoteServletTest {
         assertNotNull(noteDB.getMap());
         assertNotNull(tagDB.getMap());
         // Add a tag for testing
-        tagDB.getMap().put("testTag", new Tag("testTag"));
+        tagDB.getMap().put("testTag", new ConcreteTag("testTag"));
         tagDB.commit();
     }
 
@@ -490,7 +490,7 @@ public class NoteServletTest {
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        Version newVersion = new Version();
+        ConcreteVersion newVersion = new ConcreteVersion();
         newVersion.setTitle("Updated Title");
         newVersion.setContent("Updated Content");
         newVersion.setUpdatedAt(new Date());

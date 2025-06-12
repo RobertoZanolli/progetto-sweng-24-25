@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.ConcreteUser;
 import com.google.gwt.sample.notes.shared.User;
 import org.junit.After;
 import org.junit.Before;
@@ -63,7 +64,7 @@ public class RegisterServletTest {
 
     @Test
     public void testSuccessfulRegistration() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("newuser@test.it");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -83,7 +84,7 @@ public class RegisterServletTest {
     @Test
     public void testDuplicateRegistration() throws Exception {
         // First registration
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("duplicate@test.it");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -103,7 +104,7 @@ public class RegisterServletTest {
 
     @Test
     public void testInvalidEmail() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("invalidemail");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -544,7 +545,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterNewUser() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("testuser@test.it");
         user.setPassword ("password123");
         String json = gson.toJson(user);
@@ -559,7 +560,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterDuplicateUser() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("dupeuser@test.it");
         user.setPassword ("password123");
         String json = gson.toJson(user);
@@ -581,7 +582,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterWithInvalidEmail() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("invalidemail.com");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -596,7 +597,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterWithNullEmail() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail(null);
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -611,7 +612,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterWithEmptyEmail() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("");
         user.setPassword("password123");
         String json = gson.toJson(user);
@@ -626,7 +627,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterWithNullPassword() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("test@domain.com");
         user.setPassword(null);
         String json = gson.toJson(user);
@@ -641,7 +642,7 @@ public class RegisterServletTest {
 
     @Test
     public void testRegisterWithEmptyPassword() throws Exception {
-        User user = new User();
+        User user = new ConcreteUser();
         user.setEmail("test@domain.com");
         user.setPassword("");
         String json = gson.toJson(user);

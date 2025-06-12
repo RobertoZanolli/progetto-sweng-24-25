@@ -3,6 +3,7 @@ package com.google.gwt.sample.notes.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
@@ -27,7 +28,7 @@ public class NoteFactory {
 
     // Factory method standard
     public static synchronized Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
-        Note note = new Note();
+        Note note = new ConcreteNote();
 
         NoteIdGenerator generator = new NoteIdGenerator(1);
         long id = generator.nextId();
@@ -45,7 +46,7 @@ public class NoteFactory {
 
     // Factory method con id
     public static synchronized Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
-        Note note = new Note();
+        Note note = new ConcreteNote();
         note.setId(id);
         note.setTags(tags);
         note.setOwnerEmail(ownerEmail);

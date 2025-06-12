@@ -1,6 +1,7 @@
 package com.google.gwt.sample.notes.server;
 
 import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
@@ -21,7 +22,7 @@ public class VersionFactory {
     }
 
     public static synchronized Version create(String title, String content) {
-        Version version = new Version();
+        Version version = new ConcreteVersion();
 
         version.setTitle(title);
         version.setContent(content);
