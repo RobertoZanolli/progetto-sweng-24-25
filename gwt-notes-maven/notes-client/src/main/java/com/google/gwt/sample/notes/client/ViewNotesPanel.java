@@ -17,6 +17,7 @@ import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Session;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
@@ -25,11 +26,13 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.datepicker.client.DateBox;
+import com.google.gwt.user.datepicker.client.DateBox.DefaultFormat;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.i18n.client.DateTimeFormat;
 
 public class ViewNotesPanel extends Composite {
-    private final VerticalPanel panel = new VerticalPanel();
+    private final VerticalPanel bodyPanle = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
     private List<Note> filteredNotes = new ArrayList<>();
     private String currentKeyword = "";
@@ -38,12 +41,16 @@ public class ViewNotesPanel extends Composite {
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
     private final Button exitButton = new Button("Esci");
-    
+    private final DateBox startDate = new DateBox();
+    private final DateBox endDate = new DateBox();
+    private final VerticalPanel viewNotesPanel = new VerticalPanel();
+    private final Button btnDeleteDateFilter = new Button("Rimuovi filtro data");
+
     @SuppressWarnings("deprecation")
     private final ListBox tagListBox = new ListBox(true);
 
     public ViewNotesPanel() {
-        initWidget(panel);
+        initWidget(bodyPanle);
         buildUI();
         setupHandlers();
     }
@@ -51,15 +58,14 @@ public class ViewNotesPanel extends Composite {
     private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
-        
-        panel.add(new Label("Utente loggato: " + Session.getInstance().getUserEmail()));
 
+        bodyPanle.add(new Label("Utente loggato: " + Session.getInstance().getUserEmail()));
 
         searchPanel.setSpacing(10);
         searchBox.getElement().setPropertyString("placeholder", "Cerca...");
         searchPanel.add(new Label("Cerca per parole chiave: "));
         searchPanel.add(searchBox);
-        panel.add(searchPanel);
+        bodyPanle.add(searchPanel);
 
         // Sezione di ricerca per tag
         HorizontalPanel tagPanel = new HorizontalPanel();
@@ -67,7 +73,26 @@ public class ViewNotesPanel extends Composite {
         tagPanel.add(new Label("Cerca per tag (usa 'Ctrl + Click' per selezione multipla): "));
         getTags();
         tagPanel.add(tagListBox);
-        panel.add(tagPanel);
+        bodyPanle.add(tagPanel);
+
+        // Sezione di ricerca per data di modifica
+        DefaultFormat dateFormat = new DateBox.DefaultFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
+        startDate.setFormat(dateFormat);
+        endDate.setFormat(dateFormat);
+        startDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+        endDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+
+
+
+        HorizontalPanel datePanel = new HorizontalPanel();
+        datePanel.setSpacing(10);
+        datePanel.add(new Label("Cerca per data di modifica: "));
+        datePanel.add(new Label("Da: "));
+        datePanel.add(startDate);
+        datePanel.add(new Label("A: "));
+        datePanel.add(endDate);
+        datePanel.add(btnDeleteDateFilter);
+        bodyPanle.add(datePanel);
 
         getNotes();
 
@@ -76,8 +101,12 @@ public class ViewNotesPanel extends Composite {
         buttonPanel.setSpacing(10);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(exitButton);
-        panel.add(feedbackLabel);
-        panel.add(buttonPanel);
+        bodyPanle.add(feedbackLabel);
+        bodyPanle.add(buttonPanel);
+
+        // Pannello per visualizzare le note
+        bodyPanle.setSpacing(10);
+        bodyPanle.add(viewNotesPanel);
     }
 
     private void setupHandlers() {
@@ -95,17 +124,50 @@ public class ViewNotesPanel extends Composite {
                     currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
                 }
             }
+        });
+
+        startDate.addValueChangeHandler(event -> {
+            if (endDate.getValue() != null && startDate.getValue() != null) {
+                // Controllo se la data di inizio è precedente alla data di fine
+                boolean isValidDate = startDate.getValue().before(endDate.getValue());
+                if (!isValidDate) {
+                    startDate.setValue(null);
+                    Window.alert("La data di inizio deve essere precedente alla data di fine.");
+                    return;
+                }
+            }
+            // Filtra note per data di inizio
             applyFilters();
         });
-        
+
+        endDate.addValueChangeHandler(event -> {
+            if (startDate.getValue() != null && endDate.getValue() != null) {
+                // Controllo se la data di fine è successiva alla data di inizio
+                boolean isValidDate = endDate.getValue().after(startDate.getValue());
+                if (!isValidDate) {
+                    endDate.setValue(null);
+                    Window.alert("La data di fine deve essere successiva alla data di inizio.");
+                    return;
+                }
+            }
+            // Filtra note per data di inizio
+            applyFilters();
+        });
+
+        btnDeleteDateFilter.addClickHandler(event -> {
+            startDate.setValue(null);
+            endDate.setValue(null);
+            applyFilters();
+        });
+
         createNoteButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new CreateNotePanel());
+            bodyPanle.clear();
+            bodyPanle.add(new CreateNotePanel());
         });
 
         exitButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new HomePanel());
+            bodyPanle.clear();
+            bodyPanle.add(new HomePanel());
 
             Session.getInstance().destroy();
         });
@@ -113,68 +175,83 @@ public class ViewNotesPanel extends Composite {
 
     private void applyFilters() {
         filteredNotes = notes.stream()
-            .filter(n -> {
-                // Filtro per keyword
-                String title = n.getCurrentVersion().getTitle() != null ? n.getCurrentVersion().getTitle().toLowerCase() : "";
-                String content = n.getCurrentVersion().getContent() != null ? n.getCurrentVersion().getContent().toLowerCase() : "";
-                boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword) || content.contains(currentKeyword);
-                
-                // Filtro per tag
-                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
-                boolean matchesTags = currentSelectedTags.isEmpty() ||
-                                      currentSelectedTags.stream().anyMatch(tag ->
-                                          java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag))
-                                      );
-                
-                return matchesKeyword && matchesTags;
-            })
-            .collect(Collectors.toList());
+                .filter(n -> {
+                    // Filtro per keyword
+                    String title = n.getCurrentVersion().getTitle() != null
+                            ? n.getCurrentVersion().getTitle().toLowerCase()
+                            : "";
+                    String content = n.getCurrentVersion().getContent() != null
+                            ? n.getCurrentVersion().getContent().toLowerCase()
+                            : "";
+                    boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword)
+                            || content.contains(currentKeyword);
+
+                    // Filtro per tag
+                    String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                    boolean matchesTags = currentSelectedTags.isEmpty() ||
+                            currentSelectedTags.stream().anyMatch(
+                                    tag -> java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag)));
+
+                    // Filtro per data di modifica
+
+                    boolean matchesDate = true;
+                    if (startDate.getValue() != null && endDate.getValue() != null) {
+                        // Se le date non sono selezionate, ritorna solo keyword e tag
+                        matchesDate = n.getCurrentVersion().getUpdatedAt() != null &&
+                                !n.getCurrentVersion().getUpdatedAt().before(startDate.getValue()) &&
+                                !n.getCurrentVersion().getUpdatedAt().after(endDate.getValue());
+                    }
+
+                    return matchesKeyword && matchesTags && matchesDate;
+                })
+                .collect(Collectors.toList());
         renderNotes();
     }
 
     // Mostra le note filtrate
     private void renderNotes() {
         // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
-        if (panel.getWidgetCount() > 5) {
-            while (panel.getWidgetCount() > 5) {
-                panel.remove(5);
-            }
-        }
+        viewNotesPanel.clear();
 
         // Aggiungo note filtrate
         for (Note note : filteredNotes) {
             VerticalPanel notePanel = new VerticalPanel();
             notePanel.setSpacing(5);
 
-            Label titleLabel = new Label("Titolo: " + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
+            Label titleLabel = new Label("Titolo: "
+                    + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
             notePanel.add(titleLabel);
 
-            String tags = note.getTags() != null && note.getTags().length > 0 
-                ? String.join(", ", note.getTags()) : "Nessun tag";
+            String tags = note.getTags() != null && note.getTags().length > 0
+                    ? String.join(", ", note.getTags())
+                    : "Nessun tag";
             Label tagsLabel = new Label("Tag: " + tags);
             notePanel.add(tagsLabel);
 
-            Label createdAtLabel = new Label("Creata: " + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
+            Label createdAtLabel = new Label("Creata: "
+                    + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
             notePanel.add(createdAtLabel);
 
-            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null ? note.getCurrentVersion().getUpdatedAt().toString() : "Data non disponibile"));
+            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null
+                    ? note.getCurrentVersion().getUpdatedAt().toString()
+                    : "Data non disponibile"));
             notePanel.add(updatedAtLabel);
 
-            Label ownerLabel= new Label("Proprietario: "+ note.getOwnerEmail());
+            Label ownerLabel = new Label("Proprietario: " + note.getOwnerEmail());
             notePanel.add(ownerLabel);
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
             noteDetailButton.addClickHandler(event -> {
-                panel.clear();
-                panel.add(new NoteDetailPanel(note));
+                bodyPanle.clear();
+                bodyPanle.add(new NoteDetailPanel(note));
             });
             notePanel.add(noteDetailButton);
 
-            panel.add(notePanel);
+            viewNotesPanel.add(notePanel);
 
             // Divisore tra le note
             HTMLPanel divider = new HTMLPanel("<hr>");
-            panel.add(divider);
+            viewNotesPanel.add(divider);
         }
     }
 
@@ -288,7 +365,8 @@ public class ViewNotesPanel extends Composite {
                                 }
                             }
                             note.newVersion(version);
-                            System.out.println("Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
+                            System.out.println(
+                                    "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
                         }
                     }
                 }
