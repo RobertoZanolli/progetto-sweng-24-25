@@ -299,7 +299,8 @@ public class ViewConflictPanel extends Composite {
         payload.put("title", new JSONString(title));
         payload.put("content", new JSONString(content));
 
-        String selectedPermission = permissionListBoxOriginal.getValue(permissionListBoxOriginal.getSelectedIndex());
+        String selectedLabel = permissionListBoxOriginal.getItemText(permissionListBoxOriginal.getSelectedIndex());
+        String selectedPermission = permissionMap.get(selectedLabel);
         payload.put("permission", new JSONString(selectedPermission));
 
         JSONArray tagsArray = new JSONArray();
@@ -333,7 +334,8 @@ public class ViewConflictPanel extends Composite {
                         // qui va inserita la getNote per mostrare il conflitto
                         getNoteById(originalNote.getId(), payload);
                     } else {
-                        feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
+                        feedbackLabel.setText("Errore durante la modifica (" + response.getStatusCode() + "): " +
+                      response.getStatusText() + " - " + response.getText());
                     }
                 }
 
@@ -361,7 +363,8 @@ public class ViewConflictPanel extends Composite {
         payload.put("title", new JSONString(title));
         payload.put("content", new JSONString(content));
 
-        String selectedPermission = permissionListBoxUpdated.getValue(permissionListBoxUpdated.getSelectedIndex());
+        String selectedLabel = permissionListBoxOriginal.getItemText(permissionListBoxOriginal.getSelectedIndex());
+        String selectedPermission = permissionMap.get(selectedLabel);
         payload.put("permission", new JSONString(selectedPermission));
 
         JSONArray tagsArray = new JSONArray();
@@ -396,7 +399,8 @@ public class ViewConflictPanel extends Composite {
                         getNoteById(originalNote.getId(), payload);
 
                     } else {
-                        feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
+                        feedbackLabel.setText("Errore durante la modifica (" + response.getStatusCode() + "): " +
+                      response.getStatusText() + " - " + response.getText());
                     }
                 }
 
