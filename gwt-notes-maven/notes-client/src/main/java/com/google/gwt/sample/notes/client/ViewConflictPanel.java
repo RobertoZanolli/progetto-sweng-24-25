@@ -163,6 +163,15 @@ public class ViewConflictPanel extends Composite {
     }
 
     private void setupHandlers() {
+
+        addTagButtonOriginal.addClickHandler(event -> {
+            addTag();
+        });
+
+        addTagButtonOriginal.addClickHandler(event -> {
+            addTag();
+        });
+
         acceptOriginalButton.addClickHandler(event -> {
             updateNoteOriginal();
         });
@@ -272,17 +281,42 @@ public class ViewConflictPanel extends Composite {
         }
     }
 
-    private void setUpName() {
-        tagListBoxOriginal.getElement().setAttribute("name", "tagList");
-        tagListBoxUpdated.getElement().setAttribute("name", "tagList");
+    private void addTag() {
+        String newTag = newTagBox.getText().trim();
+        if (!newTag.isEmpty()) {
+            JSONObject payload = new JSONObject();
+            payload.put("name", new JSONString(newTag));
 
-        originalTextContent.getElement().setAttribute("name", "textContent");
-        updatedTextContent.getElement().setAttribute("name", "textContent");
-        originalTextTitle.getElement().setAttribute("name", "textTitle");
-        updatedTextTitle.getElement().setAttribute("name", "textTitle");
+            RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                    GWT.getHostPageBaseURL() + "api/tags");
+            builder.setHeader("Content-Type", "application/json");
+            builder.setIncludeCredentials(true);
+            try {
+                builder.sendRequest(payload.toString(), new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        if (response.getStatusCode() == Response.SC_OK) {
+                            feedbackLabel.setText(tagLogName + " created!");
+                            updateTagList(false, newTag);
+                        } else if (response.getStatusCode() == Response.SC_CONFLICT) {
+                            feedbackLabel.setText(tagLogName + " already exists.");
+                            updateTagList(true, newTag);
+                        } else {
+                            feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
+                        }
+                    }
 
-        permissionListBoxOriginal.getElement().setAttribute("name", "permissionList");
-        permissionListBoxUpdated.getElement().setAttribute("name", "permissionList");
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        feedbackLabel.setText("Error: " + exception.getMessage());
+                    }
+                });
+            } catch (RequestException e) {
+                feedbackLabel.setText("Request error: " + e.getMessage());
+            }
+        } else {
+            Window.alert("Inserisci un nome per il tag.");
+        }
     }
 
     private void updateNoteOriginal() {
@@ -335,7 +369,7 @@ public class ViewConflictPanel extends Composite {
                         getNoteById(originalNote.getId(), payload);
                     } else {
                         feedbackLabel.setText("Errore durante la modifica (" + response.getStatusCode() + "): " +
-                      response.getStatusText() + " - " + response.getText());
+                                response.getStatusText() + " - " + response.getText());
                     }
                 }
 
@@ -400,7 +434,7 @@ public class ViewConflictPanel extends Composite {
 
                     } else {
                         feedbackLabel.setText("Errore durante la modifica (" + response.getStatusCode() + "): " +
-                      response.getStatusText() + " - " + response.getText());
+                                response.getStatusText() + " - " + response.getText());
                     }
                 }
 

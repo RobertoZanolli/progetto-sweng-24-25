@@ -11,7 +11,6 @@ com\google\gwt\sample\notes\client\ViewConflictPanel$5.class
 com\google\gwt\sample\notes\client\ViewNotesPanel.class
 com\google\gwt\sample\notes\client\HomePanel.class
 com\google\gwt\sample\notes\client\NoteHistoryPanel.class
-com\google\gwt\sample\notes\client\ViewConflictPanel$7.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$6.class
 com\google\gwt\sample\notes\client\CreateNotePanel$3.class
 com\google\gwt\sample\notes\client\ViewConflictPanel$2.class
@@ -26,6 +25,5 @@ com\google\gwt\sample\notes\client\ViewConflictPanel$4.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$7.class
 com\google\gwt\sample\notes\client\notes.class
 com\google\gwt\sample\notes\client\ViewConflictPanel$1.class
-com\google\gwt\sample\notes\client\ViewConflictPanel$6.class
 com\google\gwt\sample\notes\client\NoteDetailPanel$2.class
 com\google\gwt\sample\notes\client\ViewNotesPanel$2.class
