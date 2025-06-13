@@ -165,11 +165,11 @@ public class ViewConflictPanel extends Composite {
     private void setupHandlers() {
 
         addTagButtonOriginal.addClickHandler(event -> {
-            addTag();
+            addTag(tagListBoxOriginal, newTagBoxOriginal);
         });
 
-        addTagButtonOriginal.addClickHandler(event -> {
-            addTag();
+        addTagButtonUpdated.addClickHandler(event -> {
+            addTag(tagListBoxUpdated, newTagBoxUpdated);
         });
 
         acceptOriginalButton.addClickHandler(event -> {
@@ -281,7 +281,7 @@ public class ViewConflictPanel extends Composite {
         }
     }
 
-    private void addTag() {
+    private void addTag(ListBox tagListBox, TextBox newTagBox) {
         String newTag = newTagBox.getText().trim();
         if (!newTag.isEmpty()) {
             JSONObject payload = new JSONObject();
@@ -316,6 +316,19 @@ public class ViewConflictPanel extends Composite {
             }
         } else {
             Window.alert("Inserisci un nome per il tag.");
+        }
+    }
+
+    private void updateTagList(Boolean exists, String newTag) {
+        if (!exists) {
+            // Usiamo l'indice come valore, ma si può usare anche un UUID o il testo stesso
+            tagListBoxOriginal.addItem(newTag, String.valueOf(tagListBoxOriginal.getItemCount() + 1));
+            newTagBoxOriginal.setText("");
+
+            tagListBoxUpdated.addItem(newTag, String.valueOf(tagListBoxUpdated.getItemCount() + 1));
+            newTagBoxUpdated.setText("");
+        } else {
+            feedbackLabel.setText("Tag già presente.");
         }
     }
 
