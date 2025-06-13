@@ -1,13 +1,11 @@
-
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
-import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.ConcreteTag;
+import com.google.gwt.sample.notes.shared.Tag;
 
 public class TagFactory {
 
-    private static final Gson gson = new Gson();
+    private static final JsonParser parser = new GsonJsonParser();
     private static TagFactory instance;
 
     private TagFactory() {}
@@ -24,10 +22,10 @@ public class TagFactory {
     }
 
     public static synchronized Tag fromJson(String json) {
-        return gson.fromJson(json, ConcreteTag.class);
+        return parser.fromJson(json, ConcreteTag.class);
     }
 
     public static synchronized String toJson(Tag tag) {
-        return gson.toJson(tag);
+        return parser.toJson(tag);
     }
 }

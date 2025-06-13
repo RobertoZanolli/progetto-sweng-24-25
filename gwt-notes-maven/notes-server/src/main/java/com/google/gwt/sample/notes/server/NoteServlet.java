@@ -199,16 +199,14 @@ public class NoteServlet extends HttpServlet {
             }
         }
 
-        // Usa Gson per convertire la lista filtrata in JSON
-        Gson gson = new Gson();
-        String json = gson.toJson(visibleNotes);
+        // Conversione della lista filtrata
+        String json = new Gson().toJson(visibleNotes);
 
         // Scrivi nella risposta
         PrintWriter out = resp.getWriter();
         out.print(json);
         out.flush();
 
-        // Imposta stato OK
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 

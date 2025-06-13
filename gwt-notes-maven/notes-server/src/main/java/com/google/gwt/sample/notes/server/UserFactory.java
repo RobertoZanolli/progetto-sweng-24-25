@@ -1,13 +1,11 @@
-
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.User;
 import com.google.gwt.sample.notes.shared.ConcreteUser;
 
 public class UserFactory {
 
-    private static final Gson gson = new Gson();
+    private static final JsonParser parser = new GsonJsonParser();
     private static UserFactory instance;
 
     private UserFactory() {}
@@ -24,10 +22,10 @@ public class UserFactory {
     }
 
     public static synchronized User fromJson(String json) {
-        return gson.fromJson(json, ConcreteUser.class);
+        return parser.fromJson(json, ConcreteUser.class);
     }
 
     public static synchronized String toJson(User user) {
-        return gson.toJson(user);
+        return parser.toJson(user);
     }
 }

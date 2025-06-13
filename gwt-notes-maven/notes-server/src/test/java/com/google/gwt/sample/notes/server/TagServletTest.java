@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.ConcreteTag;
 import com.google.gwt.sample.notes.shared.Tag;
 import org.junit.After;
@@ -16,7 +15,6 @@ import static org.junit.Assert.*;
 
 public class TagServletTest {
     private TagServlet servlet;
-    private Gson gson = new Gson();
     private final String tableName = "tagsTest";
     private final String logName = "Tag";
     private File tempFile;
@@ -86,7 +84,7 @@ public class TagServletTest {
     @Test
     public void testCreateNewTag() throws Exception {
         Tag tag = createValidTag("nuovo tag");
-        String json = gson.toJson(tag);
+        String json = TagFactory.toJson(tag);
         StubHttpServletRequest req = new StubHttpServletRequest(json);
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
@@ -97,7 +95,7 @@ public class TagServletTest {
     @Test
     public void testCreateDuplicateTag() throws Exception {
         Tag tag = createValidTag("dupTag");
-        String json = gson.toJson(tag);
+        String json = TagFactory.toJson(tag);
         // First creation should succeed
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
@@ -127,7 +125,7 @@ public class TagServletTest {
         Tag tag1 = new ConcreteTag();
         Tag tag2 = new ConcreteTag("");
         for (Tag tag : new Tag[] { tag1, tag2 }) {
-            String json = gson.toJson(tag);
+            String json = TagFactory.toJson(tag);
             StubHttpServletRequest req = new StubHttpServletRequest(json);
             StubHttpServletResponse resp = new StubHttpServletResponse();
             servlet.doPost(req, resp);
@@ -139,7 +137,7 @@ public class TagServletTest {
     @Test
     public void testGetTags() throws Exception {
         Tag tag = createValidTag("nuovo tag");
-        String json = gson.toJson(tag);
+        String json = TagFactory.toJson(tag);
         // Create the tag
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
         StubHttpServletResponse postResp = new StubHttpServletResponse();

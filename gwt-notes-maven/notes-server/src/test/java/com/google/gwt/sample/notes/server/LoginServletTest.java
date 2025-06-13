@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.ConcreteUser;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
@@ -36,7 +35,6 @@ import static org.junit.Assert.*;
 @SuppressWarnings("deprecation")
 public class LoginServletTest {
     private LoginServlet servlet;
-    private Gson gson = new Gson();
     private File tempDbFile;
     
     @Before
@@ -89,7 +87,7 @@ public class LoginServletTest {
         User user = new ConcreteUser();
         user.setEmail("testuser@test.it");
         user.setPassword("password123");
-        String json = gson.toJson(user);
+        String json = UserFactory.toJson(user);
 
         StubHttpServletRequest req = new StubHttpServletRequest(json);
         StubHttpServletResponse resp = new StubHttpServletResponse();
@@ -105,7 +103,7 @@ public class LoginServletTest {
         User user = new ConcreteUser();
         user.setEmail("testuser@test.it");
         user.setPassword("wrongpassword");
-        String json = gson.toJson(user);
+        String json = UserFactory.toJson(user);
 
         StubHttpServletRequest req = new StubHttpServletRequest(json);
         StubHttpServletResponse resp = new StubHttpServletResponse();
@@ -120,7 +118,7 @@ public class LoginServletTest {
         User user = new ConcreteUser();
         user.setEmail("nonexistent@test.it");
         user.setPassword("password123");
-        String json = gson.toJson(user);
+        String json = UserFactory.toJson(user);
 
         StubHttpServletRequest req = new StubHttpServletRequest(json);
         StubHttpServletResponse resp = new StubHttpServletResponse();
