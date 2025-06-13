@@ -9,6 +9,7 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import com.google.gwt.http.client.RequestBuilder;
 import com.google.gwt.http.client.RequestCallback;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.Response;
+import com.google.gwt.http.client.URL;
 import com.google.gwt.http.client.RequestException;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
@@ -219,7 +221,7 @@ public class NoteDetailPanel extends Composite {
                     newTagBox.setEnabled(true);
                     addTagButton.setEnabled(true);
 
-                    if(note.isOwner(Session.getInstance().getUserEmail())){
+                    if (note.isOwner(Session.getInstance().getUserEmail())) {
                         permissionListBox.setEnabled(true);
                     }
                     editButton.setText("Salva modifiche");
@@ -271,7 +273,6 @@ public class NoteDetailPanel extends Composite {
                 DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
                 payload.put("lastKnownUpdate", new JSONString(fmt.format(note.getCurrentVersion().getUpdatedAt())));
 
-
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
                 builder.setHeader("Content-Type", "application/json");
@@ -313,6 +314,11 @@ public class NoteDetailPanel extends Composite {
                                 addTagButton.setEnabled(false);
                                 permissionListBox.setEnabled(false);
                                 editButton.setText("Modifica");
+                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
+                                feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
+
+                                // ottengo l'ultima versione della nota
+                                getNoteById(note.getId(), payload);
                             } else {
                                 feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
                             }
@@ -482,5 +488,125 @@ public class NoteDetailPanel extends Composite {
         } else {
             feedbackLabel.setText("Tag già presente");
         }
+    }
+
+    public void getNoteById(String noteId, JSONObject payload) {
+        if (noteId == null || noteId.trim().isEmpty()) {
+            feedbackLabel.setText("ID nota non valido.");
+            return;
+        }
+
+        String url = GWT.getHostPageBaseURL() + "api/notes?id=" + URL.encodeQueryString(noteId);
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, url);
+        builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
+
+        try {
+            builder.sendRequest(null, new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        Note note = parseSingleNoteJson(json);
+                        if (note == null) {
+                            feedbackLabel.setText("Nota non trovata o malformata.");
+                        } else {
+                            panel.clear();
+                            panel.add(new ViewConflictPanel(note, payload));
+                        }
+                    } else {
+                        feedbackLabel.setText("Errore nel recupero della nota: " + response.getStatusText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Errore durante la richiesta: " + exception.getMessage());
+                }
+            });
+        } catch (RequestException e) {
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+        }
+    }
+
+    private Note parseSingleNoteJson(String json) {
+        JSONValue value = JSONParser.parseStrict(json);
+        JSONObject obj = value.isObject();
+
+        if (obj == null) {
+            feedbackLabel.setText("Errore: risposta JSON non valida");
+            return null;
+        }
+
+        DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
+
+        Note note = new Note();
+        // ID
+        if (obj.containsKey("id") && obj.get("id").isString() != null) {
+            note.setId(obj.get("id").isString().stringValue());
+        }
+        // OwnerEmail
+        if (obj.containsKey("ownerEmail") && obj.get("ownerEmail").isString() != null) {
+            note.setOwnerEmail(obj.get("ownerEmail").isString().stringValue());
+        }
+        // CreatedDate
+        if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
+            try {
+                String dateStr = obj.get("createdAt").isString().stringValue();
+                dateStr = dateStr.replace("\u202f", " ");
+                note.setCreatedAt(dateFormat.parse(dateStr));
+            } catch (IllegalArgumentException e) {
+                GWT.log("Errore parsing createdAt: " + e.getMessage());
+            }
+        }
+        // Tags
+        if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
+            JSONArray tagsArray = obj.get("tags").isArray();
+            String[] tags = new String[tagsArray.size()];
+            for (int t = 0; t < tagsArray.size(); t++) {
+                if (tagsArray.get(t).isString() != null) {
+                    tags[t] = tagsArray.get(t).isString().stringValue();
+                } else {
+                    tags[t] = "";
+                }
+            }
+            note.setTags(tags);
+        }
+        // Permission
+        if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
+            note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
+        }
+        // Versions
+        if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
+            JSONArray versionsArray = obj.get("versions").isArray();
+            for (int v = 0; v < versionsArray.size(); v++) {
+                JSONObject versionObj = versionsArray.get(v).isObject();
+                if (versionObj != null) {
+                    Version version = new Version();
+                    // Title
+                    if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
+                        version.setTitle(versionObj.get("title").isString().stringValue());
+                    }
+                    // Content
+                    if (versionObj.containsKey("content") && versionObj.get("content").isString() != null) {
+                        version.setContent(versionObj.get("content").isString().stringValue());
+                    }
+                    // UpdatedAt
+                    if (versionObj.containsKey("updatedAt") && versionObj.get("updatedAt").isString() != null) {
+                        try {
+                            String dateStr = versionObj.get("updatedAt").isString().stringValue();
+                            dateStr = dateStr.replace("\u202f", " ");
+                            version.setUpdatedAt(dateFormat.parse(dateStr));
+                        } catch (IllegalArgumentException e) {
+                            GWT.log("Errore parsing updatedAt: " + e.getMessage());
+                        }
+                    }
+                    note.newVersion(version);
+                    System.out.println(
+                            "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
+                }
+            }
+        }
+        return note;
     }
 }

@@ -9,7 +9,6 @@ import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.sample.notes.shared.Permission;
 
-
 import org.mapdb.HTreeMap;
 
 import javax.servlet.http.*;
@@ -170,6 +169,15 @@ public class NoteServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        if (req.getParameter("id") != null) {
+            doGetById(req, resp);
+        } else {
+            // metodo originale che restituisce tutte le note visibili
+            doGetAllVisible(req, resp);
+        }
+    }
+
+    protected void doGetAllVisible(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         HttpSession session = req.getSession(false); // false = non creare nuova sessione
 
         if (session == null) {
@@ -216,6 +224,56 @@ public class NoteServlet extends HttpServlet {
         out.flush();
 
         // Imposta stato OK
+        resp.setStatus(HttpServletResponse.SC_OK);
+     }
+
+    protected void doGetById(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        HttpSession session = req.getSession(false); // false = non creare nuova sessione
+
+        if (session == null || session.getAttribute("email") == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("Utente non autenticato");
+            return;
+        }
+
+        String userEmail = (String) session.getAttribute("email");
+
+        String noteId = req.getParameter("id");
+        if (noteId == null || noteId.isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Parametro 'id' mancante o vuoto");
+            return;
+        }
+
+        this.noteDB = NoteDB.getInstance(this.dbFileNote);
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
+
+        if (noteMap == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write("Database note non inizializzato.");
+            return;
+        }
+
+        Note note = noteMap.get(noteId);
+        if (note == null) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("Nota con ID " + noteId + " non trovata");
+            return;
+        }
+
+        if (!note.getPermission().canView(userEmail, note)) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.getWriter().write("Utente " + userEmail + " non autorizzato a visualizzare la nota");
+            return;
+        }
+
+        // Serializza l'intera nota, incluse le versioni
+        Gson gson = new Gson();
+        String json = gson.toJson(note);
+
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write(json);
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 
@@ -313,7 +371,8 @@ public class NoteServlet extends HttpServlet {
             JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
 
             // Estrai lastKnownUpdate dal JSON e convertilo
-            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
+            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString()
+                    : null;
             LocalDateTime lastKnownUpdate = null;
 
             if (lastKnownUpdateStr != null) {
@@ -330,9 +389,8 @@ public class NoteServlet extends HttpServlet {
             // Recupera data aggiornata attuale dal DB
             Date dbUpdatedAt = noteToUpdate.getCurrentVersion().getUpdatedAt();
             LocalDateTime dbUpdatedAtLDT = LocalDateTime.parse(
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        );
+                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
             // Debug log
             System.out.println(">>> Client lastKnownUpdate: " + lastKnownUpdate);
