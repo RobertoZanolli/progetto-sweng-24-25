@@ -5,9 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
-import com.google.gwt.sample.notes.shared.Permission;
 
 import org.mapdb.HTreeMap;
 
@@ -79,9 +79,8 @@ public class NoteServlet extends HttpServlet {
 
         Note note = null;
         try {
-            String strNote = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            note = NoteFactory.fromJson(strNote);
-
+            String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            note = NoteFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid " + noteLogName + " data: " + e.getMessage());
@@ -200,16 +199,14 @@ public class NoteServlet extends HttpServlet {
             }
         }
 
-        // Usa Gson per convertire la lista filtrata in JSON
-        Gson gson = new Gson();
-        String json = gson.toJson(visibleNotes);
+        // Conversione della lista filtrata
+        String json = new Gson().toJson(visibleNotes);
 
         // Scrivi nella risposta
         PrintWriter out = resp.getWriter();
         out.print(json);
         out.flush();
 
-        // Imposta stato OK
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 

@@ -13,9 +13,11 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
@@ -302,7 +304,7 @@ public class ViewNotesPanel extends Composite {
             JSONValue noteVal = array.get(i);
             if (noteVal != null && noteVal.isObject() != null) {
                 JSONObject obj = noteVal.isObject();
-                Note note = new Note();
+                Note note = new ConcreteNote();
                 // ID
                 if (obj.containsKey("id") && obj.get("id").isString() != null) {
                     note.setId(obj.get("id").isString().stringValue());
@@ -344,7 +346,7 @@ public class ViewNotesPanel extends Composite {
                     for (int v = 0; v < versionsArray.size(); v++) {
                         JSONObject versionObj = versionsArray.get(v).isObject();
                         if (versionObj != null) {
-                            Version version = new Version();
+                            Version version = new ConcreteVersion();
                             // Title
                             if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
                                 version.setTitle(versionObj.get("title").isString().stringValue());

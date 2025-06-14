@@ -7,9 +7,11 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -280,7 +282,7 @@ public class NoteDetailPanel extends Composite {
                             if (response.getStatusCode() == Response.SC_OK) {
                                 feedbackLabel.setText("Nota modificata con successo!");
 
-                                Version newVersion = new Version();
+                                Version newVersion = new ConcreteVersion();
                                 newVersion.setTitle(title);
                                 newVersion.setContent(content);
                                 newVersion.setUpdatedAt(new Date());
