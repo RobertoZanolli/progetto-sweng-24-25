@@ -42,6 +42,7 @@ public class ViewNotesPanel extends Composite {
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
     private final Button exitButton = new Button("Esci");
+    private final Button removeAllFiltersButton = new Button("Rimuovi tutti i filtri");
     private final DateBox startDate = new DateBox();
     private final DateBox endDate = new DateBox();
     private final VerticalPanel viewNotesPanel = new VerticalPanel();
@@ -101,6 +102,7 @@ public class ViewNotesPanel extends Composite {
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
         buttonPanel.add(createNoteButton);
+        buttonPanel.add(removeAllFiltersButton);
         buttonPanel.add(exitButton);
         bodyPanle.add(feedbackLabel);
         bodyPanle.add(buttonPanel);
@@ -125,6 +127,7 @@ public class ViewNotesPanel extends Composite {
                     currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
                 }
             }
+            applyFilters();
         });
 
         startDate.addValueChangeHandler(event -> {
@@ -158,6 +161,32 @@ public class ViewNotesPanel extends Composite {
         btnDeleteDateFilter.addClickHandler(event -> {
             startDate.setValue(null);
             endDate.setValue(null);
+            // Quando rimuovo filtro su data per il refresh devo rimettere gli altri filtri se c'erano
+            currentKeyword = searchBox.getText().toLowerCase();
+            currentSelectedTags.clear();
+            for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                if (tagListBox.isItemSelected(i)) {
+                    currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
+                }
+            }
+            applyFilters();
+        });
+
+        removeAllFiltersButton.addClickHandler(event -> {
+            
+            searchBox.setText("");
+            currentKeyword = "";
+            
+            
+            for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                tagListBox.setItemSelected(i, false);
+            }
+            currentSelectedTags.clear();
+            
+            
+            startDate.setValue(null);
+            endDate.setValue(null);
+            
             applyFilters();
         });
 
