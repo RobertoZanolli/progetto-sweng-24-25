@@ -29,7 +29,8 @@ public class CreateNotePanel extends Composite {
     private final TextArea contentBox = new TextArea();
 
     @SuppressWarnings("deprecation")
-    private final ListBox tagListBox = new ListBox(true); // selezione multipla
+    private final ListBox tagListBox = new ListBox(true); // Per selezione multipla
+    private final ListBox permissionListBox = new ListBox();
     
     private final Button saveButton = new Button("Salva nota");
     private final Label charCountLabel = new Label("0 / 280");
@@ -59,13 +60,19 @@ public class CreateNotePanel extends Composite {
         panel.add(charCountLabel);
 
         panel.add(new Label("Tag (usa 'Ctrl+Click' per selezione multipla):"));
+        panel.add(new Label("Aggiungi nuovo tag:"));
+        panel.add(newTagBox);
+        panel.add(addTagButton);
 
         getTags();
         panel.add(tagListBox);
 
-        panel.add(new Label("Aggiungi nuovo tag:"));
-        panel.add(newTagBox);
-        panel.add(addTagButton);
+        panel.add(new Label("Permessi:"));
+        permissionListBox.addItem("Privata", "PRIVATE");
+        permissionListBox.addItem("Lettura Pubblica", "READ");
+        permissionListBox.addItem("Scrittura Pubblica", "WRITE");
+        permissionListBox.setSelectedIndex(0); // Default a "Privata"
+        panel.add(permissionListBox);
 
         panel.add(feedbackLabel);
         panel.add(saveButton);
@@ -90,6 +97,7 @@ public class CreateNotePanel extends Composite {
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
                         GWT.getHostPageBaseURL() + "api/tags");
                 builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
                 try {
                     builder.sendRequest(payload.toString(), new RequestCallback() {
                         @Override
@@ -139,13 +147,26 @@ public class CreateNotePanel extends Composite {
                 return;
             }
 
+            JSONObject versionObj = new JSONObject();
+            versionObj.put("title", new JSONString(title));
+            versionObj.put("content", new JSONString(content));
+
+            JSONArray versionsArray = new JSONArray();
+            versionsArray.set(0, versionObj);
+
+            // Aggiungi versioni e tag
             JSONObject payload = new JSONObject();
-            payload.put("title", new JSONString(title));
-            payload.put("content", new JSONString(content));
+            payload.put("versions", versionsArray);
             payload.put("tags", tagsArray);
+
+            payload.put("email", new JSONString(Session.getInstance().getUserEmail()));
+            
+            String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
+            payload.put("permission", new JSONString(selectedPermission));
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/notes");
             builder.setHeader("Content-Type", "application/json");
+            builder.setIncludeCredentials(true);
             try {
                 builder.sendRequest(payload.toString(), new RequestCallback() {
                     @Override
@@ -200,6 +221,7 @@ public class CreateNotePanel extends Composite {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.setCallback(new RequestCallback() {
                 @Override

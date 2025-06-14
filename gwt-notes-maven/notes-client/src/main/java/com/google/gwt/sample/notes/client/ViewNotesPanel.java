@@ -13,7 +13,12 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.Permission;
+import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
@@ -22,25 +27,31 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.datepicker.client.DateBox;
+import com.google.gwt.user.datepicker.client.DateBox.DefaultFormat;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.i18n.client.DateTimeFormat;
 
 public class ViewNotesPanel extends Composite {
-    private final VerticalPanel panel = new VerticalPanel();
+    private final VerticalPanel bodyPanle = new VerticalPanel();
     private List<Note> notes = new ArrayList<>();
-private List<Note> filteredNotes = new ArrayList<>();
-private String currentKeyword = "";
-private List<String> currentSelectedTags = new ArrayList<>();
+    private List<Note> filteredNotes = new ArrayList<>();
+    private String currentKeyword = "";
+    private List<String> currentSelectedTags = new ArrayList<>();
     private final Label feedbackLabel = new Label();
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
     private final Button exitButton = new Button("Esci");
-    
+    private final DateBox startDate = new DateBox();
+    private final DateBox endDate = new DateBox();
+    private final VerticalPanel viewNotesPanel = new VerticalPanel();
+    private final Button btnDeleteDateFilter = new Button("Rimuovi filtro data");
+
     @SuppressWarnings("deprecation")
     private final ListBox tagListBox = new ListBox(true);
 
     public ViewNotesPanel() {
-        initWidget(panel);
+        initWidget(bodyPanle);
         buildUI();
         setupHandlers();
     }
@@ -48,11 +59,14 @@ private List<String> currentSelectedTags = new ArrayList<>();
     private void buildUI() {
         // Sezione di ricerca per parole chiave
         HorizontalPanel searchPanel = new HorizontalPanel();
+
+        bodyPanle.add(new Label("Utente loggato: " + Session.getInstance().getUserEmail()));
+
         searchPanel.setSpacing(10);
         searchBox.getElement().setPropertyString("placeholder", "Cerca...");
         searchPanel.add(new Label("Cerca per parole chiave: "));
         searchPanel.add(searchBox);
-        panel.add(searchPanel);
+        bodyPanle.add(searchPanel);
 
         // Sezione di ricerca per tag
         HorizontalPanel tagPanel = new HorizontalPanel();
@@ -60,7 +74,26 @@ private List<String> currentSelectedTags = new ArrayList<>();
         tagPanel.add(new Label("Cerca per tag (usa 'Ctrl + Click' per selezione multipla): "));
         getTags();
         tagPanel.add(tagListBox);
-        panel.add(tagPanel);
+        bodyPanle.add(tagPanel);
+
+        // Sezione di ricerca per data di modifica
+        DefaultFormat dateFormat = new DateBox.DefaultFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
+        startDate.setFormat(dateFormat);
+        endDate.setFormat(dateFormat);
+        startDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+        endDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+
+
+
+        HorizontalPanel datePanel = new HorizontalPanel();
+        datePanel.setSpacing(10);
+        datePanel.add(new Label("Cerca per data di modifica: "));
+        datePanel.add(new Label("Da: "));
+        datePanel.add(startDate);
+        datePanel.add(new Label("A: "));
+        datePanel.add(endDate);
+        datePanel.add(btnDeleteDateFilter);
+        bodyPanle.add(datePanel);
 
         getNotes();
 
@@ -69,8 +102,12 @@ private List<String> currentSelectedTags = new ArrayList<>();
         buttonPanel.setSpacing(10);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(exitButton);
-        panel.add(feedbackLabel);
-        panel.add(buttonPanel);
+        bodyPanle.add(feedbackLabel);
+        bodyPanle.add(buttonPanel);
+
+        // Pannello per visualizzare le note
+        bodyPanle.setSpacing(10);
+        bodyPanle.add(viewNotesPanel);
     }
 
     private void setupHandlers() {
@@ -88,106 +125,152 @@ private List<String> currentSelectedTags = new ArrayList<>();
                     currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
                 }
             }
+        });
+
+        startDate.addValueChangeHandler(event -> {
+            if (endDate.getValue() != null && startDate.getValue() != null) {
+                // Controllo se la data di inizio è precedente alla data di fine
+                boolean isValidDate = startDate.getValue().before(endDate.getValue());
+                if (!isValidDate) {
+                    startDate.setValue(null);
+                    Window.alert("La data di inizio deve essere precedente alla data di fine.");
+                    return;
+                }
+            }
+            // Filtra note per data di inizio
             applyFilters();
         });
-        
+
+        endDate.addValueChangeHandler(event -> {
+            if (startDate.getValue() != null && endDate.getValue() != null) {
+                // Controllo se la data di fine è successiva alla data di inizio
+                boolean isValidDate = endDate.getValue().after(startDate.getValue());
+                if (!isValidDate) {
+                    endDate.setValue(null);
+                    Window.alert("La data di fine deve essere successiva alla data di inizio.");
+                    return;
+                }
+            }
+            // Filtra note per data di inizio
+            applyFilters();
+        });
+
+        btnDeleteDateFilter.addClickHandler(event -> {
+            startDate.setValue(null);
+            endDate.setValue(null);
+            applyFilters();
+        });
+
         createNoteButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new CreateNotePanel());
+            bodyPanle.clear();
+            bodyPanle.add(new CreateNotePanel());
         });
 
         exitButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new HomePanel());
-            /*
-             * ToDo: eseguire il logout (eliminare dati di sessione)
-             */
+            bodyPanle.clear();
+            bodyPanle.add(new HomePanel());
+
+            Session.getInstance().destroy();
         });
     }
 
     private void applyFilters() {
         filteredNotes = notes.stream()
-            .filter(n -> {
-                // Filtro per keyword
-                String title = n.getTitle() != null ? n.getTitle().toLowerCase() : "";
-                String content = n.getContent() != null ? n.getContent().toLowerCase() : "";
-                boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword) || content.contains(currentKeyword);
-                
-                // Filtro per tag
-                String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
-                boolean matchesTags = currentSelectedTags.isEmpty() ||
-                                      currentSelectedTags.stream().anyMatch(tag ->
-                                          java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag))
-                                      );
-                
-                return matchesKeyword && matchesTags;
-            })
-            .collect(Collectors.toList());
+                .filter(n -> {
+                    // Filtro per keyword
+                    String title = n.getCurrentVersion().getTitle() != null
+                            ? n.getCurrentVersion().getTitle().toLowerCase()
+                            : "";
+                    String content = n.getCurrentVersion().getContent() != null
+                            ? n.getCurrentVersion().getContent().toLowerCase()
+                            : "";
+                    boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword)
+                            || content.contains(currentKeyword);
+
+                    // Filtro per tag
+                    String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
+                    boolean matchesTags = currentSelectedTags.isEmpty() ||
+                            currentSelectedTags.stream().anyMatch(
+                                    tag -> java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag)));
+
+                    // Filtro per data di modifica
+
+                    boolean matchesDate = true;
+                    if (startDate.getValue() != null && endDate.getValue() != null) {
+                        // Se le date non sono selezionate, ritorna solo keyword e tag
+                        matchesDate = n.getCurrentVersion().getUpdatedAt() != null &&
+                                !n.getCurrentVersion().getUpdatedAt().before(startDate.getValue()) &&
+                                !n.getCurrentVersion().getUpdatedAt().after(endDate.getValue());
+                    }
+
+                    return matchesKeyword && matchesTags && matchesDate;
+                })
+                .collect(Collectors.toList());
         renderNotes();
     }
 
     // Mostra le note filtrate
     private void renderNotes() {
         // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
-        if (panel.getWidgetCount() > 4) {
-            while (panel.getWidgetCount() > 4) {
-                panel.remove(4);
-            }
-        }
+        viewNotesPanel.clear();
 
         // Aggiungo note filtrate
         for (Note note : filteredNotes) {
             VerticalPanel notePanel = new VerticalPanel();
             notePanel.setSpacing(5);
 
-            Label titleLabel = new Label("Titolo: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
+            Label titleLabel = new Label("Titolo: "
+                    + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
             notePanel.add(titleLabel);
 
-            Label contentLabel = new Label("Contenuto: " + (note.getContent() != null ? note.getContent() : "N/A"));
-            notePanel.add(contentLabel);
-
-            String tags = note.getTags() != null && note.getTags().length > 0 
-                ? String.join(", ", note.getTags()) : "Nessun tag";
+            String tags = note.getTags() != null && note.getTags().length > 0
+                    ? String.join(", ", note.getTags())
+                    : "Nessun tag";
             Label tagsLabel = new Label("Tag: " + tags);
             notePanel.add(tagsLabel);
 
-            // CreatedDate
-            Label createdAtLabel = new Label("Creata: " + (note.getCreatedDate() != null ? note.getCreatedDate().toString() : "Data non disponibile"));
+            Label createdAtLabel = new Label("Creata: "
+                    + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
             notePanel.add(createdAtLabel);
 
-            // LastModifiedDate
-            Label lastModifiedLabel = new Label("Ultima modifica: " + (note.getLastModifiedDate() != null ? note.getLastModifiedDate().toString() : "Data non disponibile"));
-            notePanel.add(lastModifiedLabel);
+            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null
+                    ? note.getCurrentVersion().getUpdatedAt().toString()
+                    : "Data non disponibile"));
+            notePanel.add(updatedAtLabel);
 
+            Label ownerLabel = new Label("Proprietario: " + note.getOwnerEmail());
+            notePanel.add(ownerLabel);
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
             noteDetailButton.addClickHandler(event -> {
-                panel.clear();
-                panel.add(new NoteDetailPanel(note));
+                bodyPanle.clear();
+                bodyPanle.add(new NoteDetailPanel(note));
             });
             notePanel.add(noteDetailButton);
 
-            panel.add(notePanel);
+            viewNotesPanel.add(notePanel);
 
             // Divisore tra le note
             HTMLPanel divider = new HTMLPanel("<hr>");
-            panel.add(divider);
+            viewNotesPanel.add(divider);
         }
     }
 
     // Aggiunge le note alla lista
     public void getNotes() {
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
-                GWT.getHostPageBaseURL() + "notes");
+                GWT.getHostPageBaseURL() + "api/notes");
         builder.setHeader("Content-Type", "application/json");
-
+        builder.setIncludeCredentials(true);
         try {
             builder.sendRequest(null, new RequestCallback() {
                 @Override
                 public void onResponseReceived(Request request, Response response) {
+                    System.out.println("Notes response: " + response.getText());
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
                         notes = parseNotesJson(json);
+                        System.out.println("Parsed notes count: " + notes.size());
                         filteredNotes = new ArrayList<>(notes);
                         renderNotes();
                     } else {
@@ -221,42 +304,25 @@ private List<String> currentSelectedTags = new ArrayList<>();
             JSONValue noteVal = array.get(i);
             if (noteVal != null && noteVal.isObject() != null) {
                 JSONObject obj = noteVal.isObject();
-                Note note = new Note(obj.get("id").isString().stringValue());
-
-                // Title
-                if (obj.containsKey("title") && obj.get("title").isString() != null) {
-                    note.setTitle(obj.get("title").isString().stringValue());
+                Note note = new ConcreteNote();
+                // ID
+                if (obj.containsKey("id") && obj.get("id").isString() != null) {
+                    note.setId(obj.get("id").isString().stringValue());
                 }
-
-                // Content
-                if (obj.containsKey("content") && obj.get("content").isString() != null) {
-                    note.setContent(obj.get("content").isString().stringValue());
+                // OwnerEmail
+                if (obj.containsKey("ownerEmail") && obj.get("ownerEmail").isString() != null) {
+                    note.setOwnerEmail(obj.get("ownerEmail").isString().stringValue());
                 }
-
                 // CreatedDate
-                if (obj.containsKey("createdDate") && obj.get("createdDate").isString() != null) {
+                if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
                     try {
-                        String dateStr = obj.get("createdDate").isString().stringValue();
-                        // Sostituisci non-breaking space con spazio normale
+                        String dateStr = obj.get("createdAt").isString().stringValue();
                         dateStr = dateStr.replace("\u202f", " ");
-                        note.setCreatedDate(dateFormat.parse(dateStr));
+                        note.setCreatedAt(dateFormat.parse(dateStr));
                     } catch (IllegalArgumentException e) {
-                        GWT.log("Errore parsing createdDate: " + e.getMessage() + " per la stringa: " + obj.get("createdDate").isString().stringValue());
+                        GWT.log("Errore parsing createdAt: " + e.getMessage());
                     }
                 }
-
-                // LastModifiedDate
-                if (obj.containsKey("lastModifiedDate") && obj.get("lastModifiedDate").isString() != null) {
-                    try {
-                        String dateStr = obj.get("lastModifiedDate").isString().stringValue();
-                        // Sostituisci non-breaking space con spazio normale
-                        dateStr = dateStr.replace("\u202f", " ");
-                        note.setLastModifiedDate(dateFormat.parse(dateStr));
-                    } catch (IllegalArgumentException e) {
-                        GWT.log("Errore parsing lastModifiedDate: " + e.getMessage() + " per la stringa: " + obj.get("lastModifiedDate").isString().stringValue());
-                    }
-                }
-
                 // Tags
                 if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
                     JSONArray tagsArray = obj.get("tags").isArray();
@@ -270,12 +336,44 @@ private List<String> currentSelectedTags = new ArrayList<>();
                     }
                     note.setTags(tags);
                 }
-
-                
+                // Permission
+                if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
+                    note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
+                }
+                // Versions
+                if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
+                    JSONArray versionsArray = obj.get("versions").isArray();
+                    for (int v = 0; v < versionsArray.size(); v++) {
+                        JSONObject versionObj = versionsArray.get(v).isObject();
+                        if (versionObj != null) {
+                            Version version = new ConcreteVersion();
+                            // Title
+                            if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
+                                version.setTitle(versionObj.get("title").isString().stringValue());
+                            }
+                            // Content
+                            if (versionObj.containsKey("content") && versionObj.get("content").isString() != null) {
+                                version.setContent(versionObj.get("content").isString().stringValue());
+                            }
+                            // UpdatedAt
+                            if (versionObj.containsKey("updatedAt") && versionObj.get("updatedAt").isString() != null) {
+                                try {
+                                    String dateStr = versionObj.get("updatedAt").isString().stringValue();
+                                    dateStr = dateStr.replace("\u202f", " ");
+                                    version.setUpdatedAt(dateFormat.parse(dateStr));
+                                } catch (IllegalArgumentException e) {
+                                    GWT.log("Errore parsing updatedAt: " + e.getMessage());
+                                }
+                            }
+                            note.newVersion(version);
+                            System.out.println(
+                                    "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
+                        }
+                    }
+                }
                 result.add(note);
             }
         }
-
         return result;
     }
 
@@ -284,6 +382,7 @@ private List<String> currentSelectedTags = new ArrayList<>();
         RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
                 GWT.getHostPageBaseURL() + "api/tags");
         builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
         try {
             builder.setCallback(new RequestCallback() {
                 @Override

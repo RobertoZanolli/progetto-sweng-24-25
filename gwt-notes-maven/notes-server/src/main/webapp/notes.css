@@ -1,28 +1,20 @@
-/** Add css rules here for your application. */
-body {
-    padding: 10px;
+html, body {
+  background-color: #252729 !important;
+  color: bisque !important;
+  padding: 10px !important;
 }
 
-.watchListHeader {
-    background-color: #2062BB;
-    color: white;
-    font-style: italic;
+button.gwt-Button {
+  background-color: transparent;
+  border-radius: 5px;
+  border: 2px solid bisque;
+  font-style: italic;
+}
+button.gwt-Button.buttonFace{
+  background-color: transparent;
 }
 
-.watchList {
-    border: 1px solid silver;
-    padding: 2px;
-    margin-bottom: 6px;
-}
 
-.watchListNumericColumn {
-    text-align: right;
-    width: 8em;
-}
-
-.watchListRemoveColumn {
-  text-align: center;
-}
 
 .addPanel {
   margin: 10px 0px 15px 0px;
@@ -32,18 +24,3 @@ body {
   width: 50px;
 }
 
-.noChange {
-  color: black;
-}
-
-.positiveChange {
-  color: green;
-}
-
-.negativeChange {
-  color: red;
-}
-
-.errorMessage {
-  color: red;
-}

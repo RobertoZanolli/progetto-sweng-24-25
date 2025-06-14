@@ -26,3 +26,4 @@ www-test/
 
 target/
 *.lst
+.vscode/settings.json

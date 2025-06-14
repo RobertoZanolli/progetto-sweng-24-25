@@ -10,7 +10,7 @@ public class TagDB extends AbstractDB<String, Tag> {
     private static TagDB instance;
 
     private TagDB(File dbFile) {
-        super(dbFile, "tags", Serializer.STRING, Serializer.JAVA);
+        super(dbFile, "tags", Serializer.STRING, (Serializer<Tag>) Serializer.JAVA);
     }
 
     public static synchronized TagDB getInstance(File dbFile) {

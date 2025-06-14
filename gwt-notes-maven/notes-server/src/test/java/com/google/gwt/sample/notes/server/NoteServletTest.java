@@ -1,30 +1,28 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
+import com.google.gwt.sample.notes.shared.ConcreteTag;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
+import com.google.gwt.sample.notes.shared.Permission;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mapdb.HTreeMap;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
+import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
 
 import java.io.*;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Enumeration;
-import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.Mockito.*;
@@ -32,7 +30,6 @@ import static org.junit.Assert.*;
 
 public class NoteServletTest {
     private NoteServlet servlet;
-    private Gson gson = new Gson();
     private File tempDbFileNote;
     private File tempDbFileTag;
     private final String noteTableName = "notesTest";
@@ -42,46 +39,69 @@ public class NoteServletTest {
 
     @Before
     public void setUp() throws IOException {
-        // Create a temporary file for the database
         tempDbFileNote = File.createTempFile(noteTableName, ".db");
-        if (tempDbFileNote.exists()) {
+        if (tempDbFileNote.exists())
             tempDbFileNote.delete();
-        }
         tempDbFileTag = File.createTempFile(tagTableName, ".db");
-        if (tempDbFileTag.exists()) {
+        if (tempDbFileTag.exists())
             tempDbFileTag.delete();
-        }
         servlet = new NoteServlet(tempDbFileNote, tempDbFileTag);
         servlet.init();
         TagDB tagDB = TagDB.getInstance(tempDbFileTag);
         NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
-
-        assertNotNull("TagDB should be initialized", tagDB);
-        assertNotNull("NoteDB should be initialized", noteDB);
-        assertNotNull(noteLogName + " map should be initialized", noteDB.getMap());
-        assertNotNull(tagLogName + " map should be initialized", tagDB.getMap());
+        assertNotNull(tagDB);
+        assertNotNull(noteDB);
+        assertNotNull(noteDB.getMap());
+        assertNotNull(tagDB.getMap());
+        // Add a tag for testing
+        tagDB.getMap().put("testTag", new ConcreteTag("testTag"));
+        tagDB.commit();
     }
 
     @After
     public void tearDown() {
-        if (servlet != null) {
+        if (servlet != null)
             servlet.destroy();
-        }
         NoteDB.resetInstance();
         TagDB.resetInstance();
-        if (tempDbFileNote != null && tempDbFileNote.exists()) {
+        if (tempDbFileNote != null && tempDbFileNote.exists())
             tempDbFileNote.delete();
-        }
-        if (tempDbFileTag != null && tempDbFileTag.exists()) {
+        if (tempDbFileTag != null && tempDbFileTag.exists())
             tempDbFileTag.delete();
-        }
     }
 
-    private static class StubHttpServletRequest implements javax.servlet.http.HttpServletRequest {
+    private static class StubHttpServletRequest extends HttpServletRequestWrapper {
         private final BufferedReader reader;
+        private final String method;
+        private final String idParam;
+        private final String permissionParam;
+        private final HttpSession session;
 
         public StubHttpServletRequest(String body) {
+            super(mock(HttpServletRequest.class));
             this.reader = new BufferedReader(new StringReader(body));
+            this.method = "POST";
+            this.idParam = null;
+            this.permissionParam = null;
+            this.session = new StubHttpSession();
+        }
+
+        public StubHttpServletRequest(String body, String method, String idParam, String permissionParam) {
+            super(mock(HttpServletRequest.class));
+            this.reader = new BufferedReader(new StringReader(body));
+            this.method = method;
+            this.idParam = idParam;
+            this.permissionParam = permissionParam;
+            this.session = new StubHttpSession();
+        }
+
+        public StubHttpServletRequest(String body, String method, String idParam, String permissionParam, HttpSession session) {
+            super(mock(HttpServletRequest.class));
+            this.reader = new BufferedReader(new StringReader(body));
+            this.method = method;
+            this.idParam = idParam;
+            this.permissionParam = permissionParam;
+            this.session = session;
         }
 
         @Override
@@ -89,402 +109,126 @@ public class NoteServletTest {
             return reader;
         }
 
-        // Metodi autogenerati da IntelliJ per implements
         @Override
         public String getMethod() {
-            return "POST";
-        }
-
-        @Override
-        public Object getAttribute(String name) {
-            return null;
+            return method;
         }
 
         @Override
         public String getParameter(String name) {
+            if ("id".equals(name))
+                return idParam;
+            if ("permission".equals(name))
+                return permissionParam;
+            if ("hide".equals(name))
+                return permissionParam;
             return null;
         }
 
         @Override
-        public String getAuthType() {
-            return null;
+        public HttpSession getSession() {
+            return session;
         }
 
         @Override
-        public String getContextPath() {
-            return null;
+        public HttpSession getSession(boolean create) {
+            return session;
+        }
+    }
+
+    private static class StubHttpSession implements HttpSession {
+        private final Map<String, Object> attributes = new HashMap<>();
+
+        @Override
+        public Object getAttribute(String name) {
+            return attributes.get(name);
         }
 
         @Override
-        public String getHeader(String name) {
-            return null;
-        }
-
-        @Override
-        public java.util.Enumeration<String> getHeaderNames() {
-            return null;
-        }
-
-        @Override
-        public String getPathInfo() {
-            return null;
-        }
-
-        @Override
-        public String getQueryString() {
-            return null;
-        }
-
-        @Override
-        public String getRemoteUser() {
-            return null;
-        }
-
-        @Override
-        public String getRequestURI() {
-            return null;
-        }
-
-        @Override
-        public StringBuffer getRequestURL() {
-            return null;
-        }
-
-        @Override
-        public String getRequestedSessionId() {
-            return null;
-        }
-
-        @Override
-        public String getServletPath() {
-            return null;
-        }
-
-        @Override
-        public javax.servlet.http.HttpSession getSession() {
-            return null;
-        }
-
-        @Override
-        public javax.servlet.http.HttpSession getSession(boolean create) {
-            return null;
-        }
-
-        @Override
-        public boolean isRequestedSessionIdValid() {
-            return false;
-        }
-
-        @Override
-        public boolean isUserInRole(String role) {
-            return false;
-        }
-
-        @Override
-        public java.security.Principal getUserPrincipal() {
-            return null;
+        public void setAttribute(String name, Object value) {
+            attributes.put(name, value);
         }
 
         @Override
         public Enumeration<String> getAttributeNames() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getAttributeNames'");
+            return Collections.enumeration(attributes.keySet());
+        }
+
+        // Metodi stub inutilizzati
+        @Override
+        public long getCreationTime() {
+            return 0;
         }
 
         @Override
-        public String getCharacterEncoding() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getCharacterEncoding'");
+        public String getId() {
+            return "mock-session";
         }
 
         @Override
-        public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setCharacterEncoding'");
-        }
-
-        @Override
-        public int getContentLength() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getContentLength'");
-        }
-
-        @Override
-        public long getContentLengthLong() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getContentLengthLong'");
-        }
-
-        @Override
-        public String getContentType() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getContentType'");
-        }
-
-        @Override
-        public ServletInputStream getInputStream() throws IOException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getInputStream'");
-        }
-
-        @Override
-        public Enumeration<String> getParameterNames() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getParameterNames'");
-        }
-
-        @Override
-        public String[] getParameterValues(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getParameterValues'");
-        }
-
-        @Override
-        public Map<String, String[]> getParameterMap() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getParameterMap'");
-        }
-
-        @Override
-        public String getProtocol() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getProtocol'");
-        }
-
-        @Override
-        public String getScheme() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getScheme'");
-        }
-
-        @Override
-        public String getServerName() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getServerName'");
-        }
-
-        @Override
-        public int getServerPort() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getServerPort'");
-        }
-
-        @Override
-        public String getRemoteAddr() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getRemoteAddr'");
-        }
-
-        @Override
-        public String getRemoteHost() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getRemoteHost'");
-        }
-
-        @Override
-        public void setAttribute(String name, Object o) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setAttribute'");
-        }
-
-        @Override
-        public void removeAttribute(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'removeAttribute'");
-        }
-
-        @Override
-        public Locale getLocale() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocale'");
-        }
-
-        @Override
-        public Enumeration<Locale> getLocales() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocales'");
-        }
-
-        @Override
-        public boolean isSecure() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isSecure'");
-        }
-
-        @Override
-        public RequestDispatcher getRequestDispatcher(String path) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getRequestDispatcher'");
-        }
-
-        @Override
-        public String getRealPath(String path) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getRealPath'");
-        }
-
-        @Override
-        public int getRemotePort() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getRemotePort'");
-        }
-
-        @Override
-        public String getLocalName() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocalName'");
-        }
-
-        @Override
-        public String getLocalAddr() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocalAddr'");
-        }
-
-        @Override
-        public int getLocalPort() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocalPort'");
+        public long getLastAccessedTime() {
+            return 0;
         }
 
         @Override
         public ServletContext getServletContext() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getServletContext'");
+            return null;
         }
 
         @Override
-        public AsyncContext startAsync() throws IllegalStateException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'startAsync'");
+        public void setMaxInactiveInterval(int interval) {
         }
 
         @Override
-        public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
-                throws IllegalStateException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'startAsync'");
+        public int getMaxInactiveInterval() {
+            return 0;
         }
 
         @Override
-        public boolean isAsyncStarted() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isAsyncStarted'");
+        public HttpSessionContext getSessionContext() {
+            return null;
         }
 
         @Override
-        public boolean isAsyncSupported() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isAsyncSupported'");
+        public Object getValue(String name) {
+            return null;
         }
 
         @Override
-        public AsyncContext getAsyncContext() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getAsyncContext'");
+        public String[] getValueNames() {
+            return new String[0];
         }
 
         @Override
-        public DispatcherType getDispatcherType() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getDispatcherType'");
+        public void putValue(String name, Object value) {
         }
 
         @Override
-        public Cookie[] getCookies() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getCookies'");
+        public void removeValue(String name) {
         }
 
         @Override
-        public long getDateHeader(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getDateHeader'");
+        public void invalidate() {
         }
 
         @Override
-        public Enumeration<String> getHeaders(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getHeaders'");
+        public boolean isNew() {
+            return false;
         }
 
         @Override
-        public int getIntHeader(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getIntHeader'");
-        }
-
-        @Override
-        public String getPathTranslated() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getPathTranslated'");
-        }
-
-        @Override
-        public String changeSessionId() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'changeSessionId'");
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromCookie() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isRequestedSessionIdFromCookie'");
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromURL() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isRequestedSessionIdFromURL'");
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromUrl() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isRequestedSessionIdFromUrl'");
-        }
-
-        @Override
-        public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'authenticate'");
-        }
-
-        @Override
-        public void login(String username, String password) throws ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'login'");
-        }
-
-        @Override
-        public void logout() throws ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'logout'");
-        }
-
-        @Override
-        public Collection<Part> getParts() throws IOException, ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getParts'");
-        }
-
-        @Override
-        public Part getPart(String name) throws IOException, ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getPart'");
-        }
-
-        @Override
-        public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'upgrade'");
+        public void removeAttribute(String name) {
         }
     }
 
-    private static class StubHttpServletResponse implements javax.servlet.http.HttpServletResponse {
+    private static class StubHttpServletResponse extends HttpServletResponseWrapper {
         private final StringWriter sw = new StringWriter();
         private final PrintWriter pw = new PrintWriter(sw);
         private int status = 0;
+
+        public StubHttpServletResponse() {
+            super(mock(javax.servlet.http.HttpServletResponse.class));
+        }
 
         @Override
         public PrintWriter getWriter() {
@@ -506,14 +250,6 @@ public class NoteServletTest {
         }
 
         @Override
-        public void addHeader(String name, String value) {
-        }
-
-        @Override
-        public void setHeader(String name, String value) {
-        }
-
-        @Override
         public void sendError(int sc) throws IOException {
             this.status = sc;
         }
@@ -522,224 +258,25 @@ public class NoteServletTest {
         public void sendError(int sc, String msg) throws IOException {
             this.status = sc;
         }
-
-        @Override
-        public void sendRedirect(String location) throws IOException {
-        }
-
-        @Override
-        public String getCharacterEncoding() {
-            return "UTF-8";
-        }
-
-        @Override
-        public String getContentType() {
-            return null;
-        }
-
-        @Override
-        public void setContentType(String type) {
-        }
-
-        @Override
-        public void setCharacterEncoding(String charset) {
-        }
-
-        @Override
-        public void setContentLength(int len) {
-        }
-
-        @Override
-        public void setContentLengthLong(long len) {
-        }
-
-        @Override
-        public ServletOutputStream getOutputStream() throws IOException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getOutputStream'");
-        }
-
-        @Override
-        public void setBufferSize(int size) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setBufferSize'");
-        }
-
-        @Override
-        public int getBufferSize() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getBufferSize'");
-        }
-
-        @Override
-        public void flushBuffer() throws IOException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'flushBuffer'");
-        }
-
-        @Override
-        public void resetBuffer() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'resetBuffer'");
-        }
-
-        @Override
-        public boolean isCommitted() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'isCommitted'");
-        }
-
-        @Override
-        public void reset() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'reset'");
-        }
-
-        @Override
-        public void setLocale(Locale loc) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setLocale'");
-        }
-
-        @Override
-        public Locale getLocale() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getLocale'");
-        }
-
-        @Override
-        public void addCookie(Cookie cookie) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'addCookie'");
-        }
-
-        @Override
-        public boolean containsHeader(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'containsHeader'");
-        }
-
-        @Override
-        public String encodeURL(String url) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'encodeURL'");
-        }
-
-        @Override
-        public String encodeRedirectURL(String url) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'encodeRedirectURL'");
-        }
-
-        @Override
-        public String encodeUrl(String url) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'encodeUrl'");
-        }
-
-        @Override
-        public String encodeRedirectUrl(String url) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'encodeRedirectUrl'");
-        }
-
-        @Override
-        public void setDateHeader(String name, long date) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setDateHeader'");
-        }
-
-        @Override
-        public void addDateHeader(String name, long date) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'addDateHeader'");
-        }
-
-        @Override
-        public void setIntHeader(String name, int value) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setIntHeader'");
-        }
-
-        @Override
-        public void addIntHeader(String name, int value) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'addIntHeader'");
-        }
-
-        @Override
-        public void setStatus(int sc, String sm) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'setStatus'");
-        }
-
-        @Override
-        public String getHeader(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getHeader'");
-        }
-
-        @Override
-        public Collection<String> getHeaders(String name) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getHeaders'");
-        }
-
-        @Override
-        public Collection<String> getHeaderNames() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getHeaderNames'");
-        }
     }
 
-    String inputJson = "{\r\n" + //
-            "  \"title\": \"Esempio di nota\",\r\n" + //
-            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
-            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"tags\": null,\r\n" + //
-            "  \"owner\": {\r\n" + //
-            "    \"username\": \"utente_test\",\r\n" + //
-            "    \"email\": \"utente@example.com\"\r\n" + //
-            "  }\r\n" + //
-            "}";
+    private Note createValidNote(String id) {
+        String[] tags = new String[] { "testTag" };
+        Note note = NoteFactory.create(id, "Test Title", "Test Content", tags, "user@example.com", Permission.PRIVATE);
+        return note;
+    }
 
-    String inputJsonWithId = "{\r\n" + //
-            "  \"id\": \"1\",\r\n" + //
-            "  \"title\": \"Esempio di nota\",\r\n" + //
-            "  \"content\": \"Questo è il contenuto della nota di esempio.\",\r\n" + //
-            "  \"createdDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"lastModifiedDate\": \"2025-05-22T10:06:02Z\",\r\n" + //
-            "  \"tags\": null,\r\n" + //
-            "  \"owner\": {\r\n" + //
-            "    \"username\": \"utente_test\",\r\n" + //
-            "    \"email\": \"utente@example.com\"\r\n" + //
-            "  }\r\n" + //
-            "}";
-
-
-    // doPost test
     @Test
     public void testCreateNewNote() throws Exception {
-        Note user = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(user);
+        Note note = createValidNote("testTag2");
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
 
         StubHttpServletRequest req = new StubHttpServletRequest(json);
+        req.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse resp = new StubHttpServletResponse();
-
-        servlet.doPost(req, resp);
-        assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains(noteLogName + " created"));
-    }
-
-    @Test
-    public void testCreateNewNoteWithId() throws Exception {
-        Note user = NoteFactory.fromJson(inputJsonWithId);
-        String json = gson.toJson(user);
-
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        StubHttpServletResponse resp = new StubHttpServletResponse();
-
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
         assertTrue(resp.getOutput().contains(noteLogName + " created"));
@@ -747,19 +284,21 @@ public class NoteServletTest {
 
     @Test
     public void testCreateDuplicateNote() throws Exception {
-        // Use the setup servlet and db files, do not recreate them
-        Note user = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(user);
+        Note note = createValidNote("dupId");
+        String json = NoteFactory.toJson(note);
 
-        // First creation should succeed
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
+        req1.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
-        assertTrue(resp1.getOutput().contains(noteLogName + " created"));
 
-        // Second creation (duplicate) should fail with conflict
+        // Try to create the same note again
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
+        req2.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
@@ -767,95 +306,107 @@ public class NoteServletTest {
     }
 
     @Test
-    public void testCreateNoteWithInvalidJson() throws Exception {
+    public void testCreateNoteWithEmptyTitle() throws Exception {
+        Note note = createValidNote("emptyTitleId");
+        note.getCurrentVersion().setTitle("");
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        req.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse resp = new StubHttpServletResponse();
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("Title required"));
+    }
+
+    @Test
+    public void testCreateNoteWithNullTags() throws Exception {
+        Note note = createValidNote("nullTagId");
+        note.setTags(new String[] { null });
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains(tagLogName + " name required"));
+    }
+
+    @Test
+    public void testCreateNoteWithNonexistentTag() throws Exception {
+        Note note = createValidNote("badTagId");
+        note.setTags(new String[] { "notExistTag" });
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest req = new StubHttpServletRequest(json);
+        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse resp = new StubHttpServletResponse();
+        servlet.doPost(req, resp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+        assertTrue(resp.getOutput().contains("Tag notExistTag does not exist"));
+    }
+
+    @Test
+    public void testCreateNoteWithInvalidJson() throws Exception {
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
-
-        // Simulate IOException when getReader() is called
+        StubHttpServletResponse resp = new StubHttpServletResponse();
         when(req.getReader()).thenThrow(new IOException("Simulated IO error"));
-
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
         assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
     }
 
     @Test
-    public void testCreateNoteWithEmptyTitle() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
-
-        String[] invalidTitle = { null, "" };
-
-        for (String title : invalidTitle) {
-            note.setTitle(title);
-            String json = gson.toJson(note);
-
-            StubHttpServletRequest req = new StubHttpServletRequest(json);
-            StubHttpServletResponse resp = new StubHttpServletResponse();
-
-            servlet.doPost(req, resp);
-            assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-            assertTrue(resp.getOutput().contains("Title required"));
-        }
-    }
-
-    @Test
-    public void testCreateNoteWithNullTags() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
-
-        String[] invalidTags = { null, "" };
-
-        for (String tag : invalidTags) {
-            note.setTags(new String[] { tag });
-            String json = gson.toJson(note);
-
-            StubHttpServletRequest req = new StubHttpServletRequest(json);
-            StubHttpServletResponse resp = new StubHttpServletResponse();
-
-            servlet.doPost(req, resp);
-            assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-            assertTrue(resp.getOutput().contains(tagLogName + " name required"));
-        }
-    }
-
-    // doGet test
-    @Test
     public void testGetNotes() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(note);
+        Note note = createValidNote("getId");
+        String json = NoteFactory.toJson(note);
 
-        // Crea la nota
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
         StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Testa la GET
         StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        getReq.getSession().setAttribute("email", ownerEmail);
         StubHttpServletResponse getResp = new StubHttpServletResponse();
         servlet.doGet(getReq, getResp);
-
         assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
         String output = getResp.getOutput();
-        assertTrue(output.contains("Esempio di nota"));
-        assertTrue(output.contains("Questo è il contenuto della nota di esempio."));
+        assertTrue(output.contains("Test Title"));
+        assertTrue(output.contains("Test Content"));
     }
 
-    // doDelete test
     @Test
     public void testDeleteExistingNote() throws Exception {
-        Note note = NoteFactory.fromJson(inputJson);
-        String json = gson.toJson(note);
+        Note note = createValidNote("delId");
+        String json = NoteFactory.toJson(note);
 
-        // Crea la nota
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        HttpSession sharedSession = new StubHttpSession();
+        sharedSession.setAttribute("email", ownerEmail);
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, sharedSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // DELETE con id corretto
-        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
-        when(deleteReq.getParameter("id")).thenReturn(note.getId());
-
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null, sharedSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
@@ -865,27 +416,398 @@ public class NoteServletTest {
 
     @Test
     public void testDeleteNonExistingNote() throws Exception {
-        // DELETE con id inesistente
-        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
-        when(deleteReq.getParameter("id")).thenReturn("nonexistentId");
-
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", "nonexistentId", null);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, deleteResp.getStatus());
-        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID " + "nonexistentId" + " not found"));
+        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID nonexistentId not found"));
     }
 
     @Test
     public void testDeleteWithoutId() throws Exception {
-        // DELETE senza id
-        StubHttpServletRequest deleteReq = mock(StubHttpServletRequest.class);
-        when(deleteReq.getParameter("id")).thenReturn(null);
-
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", null, null);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, deleteResp.getStatus());
         assertTrue(deleteResp.getOutput().contains("Note ID required"));
+    }
+
+    @Test
+    public void testCreateNoteWithNullPermission() throws Exception {
+        // Create a note without setting permission (permission should be null)
+        Note note = createValidNote("nullPermId");
+        // Do not call note.setPermission(...) so JSON has no "permission" field
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // After creation, default permission should be PRIVATE: owner sees, others do
+        // not
+        // Owner GET
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("nullPermId"));
+
+        // Other user GET should not see
+        String otherEmail = "other@example.com";
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
+        getReqOther.getSession().setAttribute("email", otherEmail);
+        StubHttpServletResponse getRespOther = new StubHttpServletResponse();
+        servlet.doGet(getReqOther, getRespOther);
+        assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
+        String outputOther = getRespOther.getOutput();
+        assertFalse(outputOther.contains("nullPermId"));
+    }
+
+    @Test
+    public void testUpdateNoteWithNewVersionAndTags() throws Exception {
+        Note note = createValidNote("putId");
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        ConcreteVersion newVersion = new ConcreteVersion();
+        newVersion.setTitle("Updated Title");
+        newVersion.setContent("Updated Content");
+        newVersion.setUpdatedAt(new Date());
+        String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+
+        assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
+        assertTrue(putResp.getOutput().contains("Note updated with new version"));
+    }
+
+    @Test
+    public void testUpdateNoteWithMissingTitle() throws Exception {
+        Note note = createValidNote("putMissingTitleId");
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        String putJson = "{\"title\":\"\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, putResp.getStatus());
+        assertTrue(putResp.getOutput().contains("Title required"));
+    }
+
+    @Test
+    public void testUpdateNoteWithNonexistentTag() throws Exception {
+        Note note = createValidNote("putBadTagId");
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+        String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"notExistTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, putResp.getStatus());
+        assertTrue(putResp.getOutput().contains("Tag notExistTag does not exist"));
+    }
+
+    @Test
+    public void testUpdateNonExistingNote() throws Exception {
+        String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", "nonexistentId", null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, putResp.getStatus());
+        assertTrue(putResp.getOutput().contains("Note not found."));
+    }
+
+    @Test
+    public void testPermissionWithOutOwner() throws Exception {
+        // Owner can view, others cannot
+        Note note = createValidNote("privateId");
+        note.setPermission(Permission.PRIVATE);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Owner GET
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("Utente non autenticato"));
+    }
+
+    @Test
+    public void testPermissionPrivate() throws Exception {
+        // Owner can view, others cannot
+        Note note = createValidNote("privateId");
+        note.setPermission(Permission.PRIVATE);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Owner GET
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("privateId"));
+
+        // Other user GET
+        String otherEmail = "other@example.com";
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
+        getReqOther.getSession().setAttribute("email", otherEmail);
+        StubHttpServletResponse getRespOther = new StubHttpServletResponse();
+        servlet.doGet(getReqOther, getRespOther);
+        assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
+        String outputOther = getRespOther.getOutput();
+        assertFalse(outputOther.contains("privateId"));
+    }
+
+    @Test
+    public void testPermissionRead() throws Exception {
+        // Owner creates note with READ permission
+        Note note = createValidNote("readId");
+        note.setPermission(Permission.READ);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Other user GET should see
+        String otherEmail = "other@example.com";
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        getReq.getSession().setAttribute("email", otherEmail);
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("readId"));
+
+        // Other user PUT should be forbidden
+        String putJson = "{\"title\":\"New\",\"content\":\"New\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
+
+        // Other user DELETE should be forbidden
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, deleteResp.getStatus());
+    }
+
+    @Test
+    public void testPermissionWrite() throws Exception {
+        // Owner creates note with WRITE permission
+        Note note = createValidNote("writeId");
+        note.setPermission(Permission.WRITE);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Other user GET should see
+        String otherEmail = "other@example.com";
+        StubHttpServletRequest getReq = new StubHttpServletRequest("");
+        getReq.getSession().setAttribute("email", otherEmail);
+        StubHttpServletResponse getResp = new StubHttpServletResponse();
+        servlet.doGet(getReq, getResp);
+        assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
+        String output = getResp.getOutput();
+        assertTrue(output.contains("writeId"));
+
+        // Other user PUT should succeed
+        String putJson = "{\"title\":\"UpdatedTitle\",\"content\":\"UpdatedContent\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
+
+        // Other user DELETE should succeed
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletResponse deleteResp = new StubHttpServletResponse();
+        servlet.doDelete(deleteReq, deleteResp);
+        assertEquals(HttpServletResponse.SC_OK, deleteResp.getStatus());
+    }
+
+    @Test
+    public void testHiddenUser() throws Exception {
+        Note note = createValidNote("alreadyHiddenId");
+        note.setPermission(Permission.READ);
+        String ownerEmail = note.getOwnerEmail();
+        String hiddenUser = "hiddenUser@example.com";
+        note.hideForUser(hiddenUser);
+
+        NoteDB noteDB = NoteDB.getInstance(tempDbFileNote);
+        HTreeMap<String, Note> noteMap = noteDB.getMap();
+        noteMap.put(note.getId(), note);
+        noteDB.commit();
+
+        // Verifico che il proprietario veda correttamente la nota
+
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
+        servlet.doGet(getReqOwner, getRespOwner);
+        assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
+        String outputOwner = getRespOwner.getOutput();
+        assertTrue(outputOwner.contains("alreadyHiddenId"));
+
+        // Controllo che l'utente nascosto NON la veda
+        StubHttpServletRequest getReqHidden = new StubHttpServletRequest("");
+        getReqHidden.getSession().setAttribute("email", hiddenUser);
+        StubHttpServletResponse getRespHidden = new StubHttpServletResponse();
+        servlet.doGet(getReqHidden, getRespHidden);
+        assertEquals(HttpServletResponse.SC_OK, getRespHidden.getStatus());
+        String outputHidden = getRespHidden.getOutput();
+        assertFalse(outputHidden.contains("alreadyHiddenId"));
+    }
+
+    @Test
+    public void testOwnerChangePermission() throws Exception {
+        // Il proprietario crea una nota con permesso PRIVATE
+        Note note = createValidNote("permId");
+        note.setPermission(Permission.PRIVATE);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Il proprietario modifica il permesso in READ
+        String putJson = "{\"permission\":\"READ\",\"title\":\""
+                + note.getCurrentVersion().getTitle()
+                + "\",\"content\":\""
+                + note.getCurrentVersion().getContent()
+                + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}";
+
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        putReq.getSession().setAttribute("email", ownerEmail);
+
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+
+        assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
+    }
+
+    @Test
+    public void testNonOwnerChangePermission() throws Exception {
+        Note note = createValidNote("permId2");
+        note.setPermission(Permission.READ);
+        String json = NoteFactory.toJson(note);
+
+        // Simula la sessione utente
+        String ownerEmail = note.getOwnerEmail();
+
+        // Il proprietario crea la nota
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
+        postReq.getSession().setAttribute("email", ownerEmail);
+
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        /*
+         * session.setUserEmail(note.getOwnerEmail());
+         */
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        // Un utente non proprietario tenta di cambiare il permesso in PRIVATE
+        String nonOwner = "nonOwner@example.com";
+        /*
+         * session.setUserEmail(nonOwner);
+         */ String putJson = "{\"permission\":\"PRIVATE\",\"title\":\""
+                + note.getCurrentVersion().getTitle()
+                + "\",\"content\":\""
+                + note.getCurrentVersion().getContent()
+                + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}"
+                + "\",\"email\":\"" + nonOwner + "\"}";
+
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
     }
 }

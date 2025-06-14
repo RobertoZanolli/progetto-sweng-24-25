@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.mapdb.HTreeMap;
@@ -9,7 +8,6 @@ import javax.servlet.http.*;
 import java.io.*;
 
 public class LoginServlet extends HttpServlet {
-    private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
 
@@ -32,7 +30,8 @@ public class LoginServlet extends HttpServlet {
         }
         User user;
         try {
-            user = gson.fromJson(req.getReader(), User.class);
+            String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            user = UserFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid user data");
@@ -40,7 +39,7 @@ public class LoginServlet extends HttpServlet {
         }
         if (user == null || user.getEmail() == null || user.getPassword() == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("email and password required");
+            resp.getWriter().write("Email and password required");
             return;
         }
         String hash = users.get(user.getEmail());
@@ -49,8 +48,10 @@ public class LoginServlet extends HttpServlet {
             resp.getWriter().write("Invalid credentials");
             return;
         }
+
         HttpSession session = req.getSession(true);
-        session.setAttribute("user", user.getEmail());
+        session.setAttribute("email", user.getEmail());
+        
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("Login successful");
     }

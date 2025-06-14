@@ -59,6 +59,7 @@ public class RegistrationPanel extends VerticalPanel {
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/register");
             builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
             try {
                 builder.sendRequest(payload.toString(), new RequestCallback() {
                     @Override
