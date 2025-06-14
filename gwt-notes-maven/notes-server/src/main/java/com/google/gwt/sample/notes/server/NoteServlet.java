@@ -371,8 +371,7 @@ public class NoteServlet extends HttpServlet {
             JsonObject jsonObj = new JsonParser().parse(strVersion).getAsJsonObject();
 
             // Estrai lastKnownUpdate dal JSON e convertilo
-            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString()
-                    : null;
+            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
             LocalDateTime lastKnownUpdate = null;
 
             if (lastKnownUpdateStr != null) {
@@ -389,8 +388,9 @@ public class NoteServlet extends HttpServlet {
             // Recupera data aggiornata attuale dal DB
             Date dbUpdatedAt = noteToUpdate.getCurrentVersion().getUpdatedAt();
             LocalDateTime dbUpdatedAtLDT = LocalDateTime.parse(
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            );
 
             // Debug log
             System.out.println(">>> Client lastKnownUpdate: " + lastKnownUpdate);
@@ -401,7 +401,7 @@ public class NoteServlet extends HttpServlet {
                 resp.setStatus(HttpServletResponse.SC_CONFLICT);
                 resp.getWriter().write("Nota modificata da un altro utente. Ricarica.");
                 return;
-            }
+            } 
 
             // Aggiorna tag se presenti nel JSON
             if (jsonObj.has("tags") && jsonObj.get("tags").isJsonArray()) {

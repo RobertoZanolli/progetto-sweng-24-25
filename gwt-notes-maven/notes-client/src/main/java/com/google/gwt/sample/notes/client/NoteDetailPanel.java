@@ -273,6 +273,7 @@ public class NoteDetailPanel extends Composite {
                 DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
                 payload.put("lastKnownUpdate", new JSONString(fmt.format(note.getCurrentVersion().getUpdatedAt())));
 
+
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
                 builder.setHeader("Content-Type", "application/json");
