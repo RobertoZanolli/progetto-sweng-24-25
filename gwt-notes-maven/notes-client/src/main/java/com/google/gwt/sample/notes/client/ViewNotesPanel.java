@@ -278,49 +278,53 @@ public class ViewNotesPanel extends Composite {
 
     // Mostra le note filtrate
     private void renderNotes() {
-        // Rimuovo precedenti note, ma mantengo barra di ricerca e bottoni
         viewNotesPanel.clear();
-
-        // Aggiungo note filtrate
         for (Note note : filteredNotes) {
-            VerticalPanel notePanel = new VerticalPanel();
-            notePanel.setSpacing(5);
-
-            Label titleLabel = new Label("Titolo: "
-                    + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
-            notePanel.add(titleLabel);
-
-            String tags = note.getTags() != null && note.getTags().length > 0
-                    ? String.join(", ", note.getTags())
-                    : "Nessun tag";
-            Label tagsLabel = new Label("Tag: " + tags);
-            notePanel.add(tagsLabel);
-
-            Label createdAtLabel = new Label("Creata: "
-                    + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
-            notePanel.add(createdAtLabel);
-
-            Label updatedAtLabel = new Label("Ultima modifica: " + (note.getCurrentVersion().getUpdatedAt() != null
-                    ? note.getCurrentVersion().getUpdatedAt().toString()
-                    : "Data non disponibile"));
-            notePanel.add(updatedAtLabel);
-
-            Label ownerLabel = new Label("Proprietario: " + note.getOwnerEmail());
-            notePanel.add(ownerLabel);
-            // Bottone per i dettagli
-            Button noteDetailButton = new Button("Vedi nota");
-            noteDetailButton.addClickHandler(event -> {
-                RootPanel.get("mainPanel").clear();
-                RootPanel.get("mainPanel").add(new NoteDetailPanel(note));
-            });
-            notePanel.add(noteDetailButton);
-
-            viewNotesPanel.add(notePanel);
-
-            // Divisore tra le note
-            HTMLPanel divider = new HTMLPanel("<hr>");
-            viewNotesPanel.add(divider);
+            viewNotesPanel.add(createNoteWidget(note));
+            viewNotesPanel.add(new HTMLPanel("<hr>"));
         }
+    }
+
+    /**
+     * Crea un pannello per visualizzare una singola nota.
+     * @param note la nota da visualizzare
+     * @return pannello contenente i dettagli della nota e il bottone per il dettaglio
+     */
+    private VerticalPanel createNoteWidget(Note note) {
+        VerticalPanel notePanel = new VerticalPanel();
+        notePanel.setSpacing(5);
+
+        Label titleLabel = new Label("Titolo: "
+            + (note.getCurrentVersion().getTitle() != null ? note.getCurrentVersion().getTitle() : "N/A"));
+        notePanel.add(titleLabel);
+
+        String tags = note.getTags() != null && note.getTags().length > 0
+            ? String.join(", ", note.getTags())
+            : "Nessun tag";
+        Label tagsLabel = new Label("Tag: " + tags);
+        notePanel.add(tagsLabel);
+
+        Label createdAtLabel = new Label("Creata: "
+            + (note.getCreatedAt() != null ? note.getCreatedAt().toString() : "Data non disponibile"));
+        notePanel.add(createdAtLabel);
+
+        Label updatedAtLabel = new Label("Ultima modifica: "
+            + (note.getCurrentVersion().getUpdatedAt() != null
+                ? note.getCurrentVersion().getUpdatedAt().toString()
+                : "Data non disponibile"));
+        notePanel.add(updatedAtLabel);
+
+        Label ownerLabel = new Label("Proprietario: " + note.getOwnerEmail());
+        notePanel.add(ownerLabel);
+
+        Button noteDetailButton = new Button("Vedi nota");
+        noteDetailButton.addClickHandler(event -> {
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new NoteDetailPanel(note));
+        });
+        notePanel.add(noteDetailButton);
+
+        return notePanel;
     }
 
     // Aggiunge le note alla lista

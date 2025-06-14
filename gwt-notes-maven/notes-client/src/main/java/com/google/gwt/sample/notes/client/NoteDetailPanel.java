@@ -123,318 +123,14 @@ public class NoteDetailPanel extends Composite {
                 : "Data non disponibile"));
         panel.add(lastModifiedDateLabel);
 
-        HorizontalPanel buttonPanel = new HorizontalPanel();
-        buttonPanel.setSpacing(10);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(duplicateButton);
-        buttonPanel.add(viewHistory);
-        buttonPanel.add(hideButton);
-        buttonPanel.add(backButton);
-        panel.add(buttonPanel);
+        panel.add(createButtonPanel());
         panel.add(feedbackLabel);
     }
 
     private void setupHandlers() {
-        backButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new ViewNotesPanel());
-        });
-
-        addTagButton.addClickHandler(event -> {
-            String newTag = newTagBox.getText().trim();
-            if (!newTag.isEmpty()) {
-                JSONObject payload = new JSONObject();
-                payload.put("name", new JSONString(newTag));
-
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
-                        GWT.getHostPageBaseURL() + "api/tags");
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(payload.toString(), new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText(tagLogName + " created!");
-                                updateTagList(false, newTag);
-                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                                feedbackLabel.setText(tagLogName + " already exists.");
-                                updateTagList(true, newTag);
-                            } else {
-                                feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            } else {
-                Window.alert("Inserisci un nome per il tag.");
-            }
-        });
-
-        deleteButton.addClickHandler(event -> {
-            if (note.getPermission().canEdit(email, note)) {
-
-                String noteId = note.getId();
-
-                String url = GWT.getHostPageBaseURL() + "api/notes?id=" + noteId;
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.DELETE, url);
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(null, new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText("Nota eliminata!");
-                                panel.clear();
-                                panel.add(new ViewNotesPanel());
-                            } else {
-                                feedbackLabel.setText("Eliminazione fallita: " + response.getText());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore durante l'eliminazione: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            } else {
-                Window.alert("Non hai i permessi necessari per eliminare questa nota.");
-            }
-        });
-
-        editButton.addClickHandler(event -> {
-            if (!isEditMode) {
-                if (note.getPermission().canEdit(email, note)) {
-                    isEditMode = true;
-                    titleBox.setEnabled(true);
-                    contentBox.setEnabled(true);
-                    tagListBox.setEnabled(true);
-                    newTagBox.setEnabled(true);
-                    addTagButton.setEnabled(true);
-
-                    if (note.isOwner(Session.getInstance().getUserEmail())) {
-                        permissionListBox.setEnabled(true);
-                    }
-                    editButton.setText("Salva modifiche");
-
-                    String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
-                    for (int i = 0; i < tagListBox.getItemCount(); i++) {
-                        String tag = tagListBox.getValue(i);
-                        boolean isSelected = false;
-                        for (String noteTag : noteTags) {
-                            if (tag.equals(noteTag)) {
-                                isSelected = true;
-                                break;
-                            }
-                        }
-                        tagListBox.setItemSelected(i, isSelected);
-                    }
-                } else {
-                    Window.alert("Non hai i permessi necessari per modificare questa nota.");
-                }
-            } else {
-
-                String title = titleBox.getText().trim();
-                String content = contentBox.getText().trim();
-
-                if (title.isEmpty() || content.isEmpty()) {
-                    Window.alert("Titolo e contenuto sono obbligatori.");
-                    return;
-                }
-
-                // payload per la nuova versione
-                JSONObject payload = new JSONObject();
-                payload.put("title", new JSONString(title));
-                payload.put("content", new JSONString(content));
-
-                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
-                payload.put("permission", new JSONString(selectedPermission));
-
-                JSONArray tagsArray = new JSONArray();
-                int tagIndex = 0;
-                for (int i = 0; i < tagListBox.getItemCount(); i++) {
-                    if (tagListBox.isItemSelected(i)) {
-                        String tagValue = tagListBox.getItemText(i);
-                        if (tagValue != null && !tagValue.trim().isEmpty()) {
-                            tagsArray.set(tagIndex++, new JSONString(tagValue.trim()));
-                        }
-                    }
-                }
-                payload.put("tags", tagsArray);
-                DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-                payload.put("lastKnownUpdate", new JSONString(fmt.format(note.getCurrentVersion().getUpdatedAt())));
-
-
-                String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(payload.toString(), new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText("Nota modificata con successo!");
-
-                                Version newVersion = new ConcreteVersion();
-                                newVersion.setTitle(title);
-                                newVersion.setContent(content);
-                                newVersion.setUpdatedAt(new Date());
-                                note.newVersion(newVersion);
-
-                                List<String> selectedTags = new ArrayList<>();
-                                for (int i = 0; i < tagListBox.getItemCount(); i++) {
-                                    if (tagListBox.isItemSelected(i)) {
-                                        selectedTags.add(tagListBox.getValue(i));
-                                    }
-                                }
-                                String[] tagsArray = selectedTags.toArray(new String[0]);
-                                note.setTags(tagsArray);
-                                String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
-                                tagsLabel.setText("Tag: " + tagsString);
-
-                                titleBox.setText(newVersion.getTitle());
-                                contentBox.setText(newVersion.getContent());
-                                lastModifiedDateLabel
-                                        .setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
-
-                                isEditMode = false;
-                                titleBox.setEnabled(false);
-                                contentBox.setEnabled(false);
-                                tagListBox.setEnabled(false);
-                                newTagBox.setEnabled(false);
-                                addTagButton.setEnabled(false);
-                                permissionListBox.setEnabled(false);
-                                editButton.setText("Modifica");
-                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                                feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
-
-                                // ottengo l'ultima versione della nota
-                                getNoteById(note.getId(), payload);
-                            } else {
-                                feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            }
-        });
-
-        duplicateButton.addClickHandler(event -> {
-
-            if (note.getPermission().canEdit(email, note)) {
-                JSONObject payload = new JSONObject();
-
-                // Duplico tutte le versioni
-                JSONArray versionsArray = new JSONArray();
-                for (int i = 0; i < note.getAllVersions().size(); i++) {
-                    Version v = note.getAllVersions().get(i);
-                    JSONObject vObj = new JSONObject();
-                    vObj.put("title", new JSONString(
-                            (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
-                    vObj.put("content", new JSONString(v.getContent()));
-                    if (v.getUpdatedAt() != null) {
-                        vObj.put("updatedAt", new JSONString(dateFormat.format(v.getUpdatedAt())));
-                    }
-                    versionsArray.set(i, vObj);
-                }
-                payload.put("versions", versionsArray);
-                JSONArray tagsArray = new JSONArray();
-                String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
-                for (int i = 0; i < noteTags.length; i++) {
-                    tagsArray.set(i, new JSONString(noteTags[i]));
-                }
-                payload.put("tags", tagsArray);
-                payload.put("ownerEmail", new JSONString(note.getOwnerEmail()));
-
-                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
-                payload.put("permission", new JSONString(selectedPermission));
-
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
-                        GWT.getHostPageBaseURL() + "api/notes");
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(payload.toString(), new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText("Nota duplicata!");
-                            } else {
-                                feedbackLabel.setText("Duplicazione fallita: " + response.getText());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            } else {
-                Window.alert("Non hai i permessi necessari per duplicare questa nota.");
-                return;
-            }
-        });
-
-        viewHistory.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new NoteHistoryPanel(note));
-        });
-
-        hideButton.addClickHandler(event -> {
-            if (note.isOwner(email)) {
-                Window.alert("Il proprietario della nota non può rimuoversi dalla visualizzazione della nota.");
-                return;
-            }
-
-            String hideUrl = GWT.getHostPageBaseURL() + "api/notes/hide?id=" + note.getId();
-            RequestBuilder hideBuilder = new RequestBuilder(RequestBuilder.PUT, hideUrl);
-            hideBuilder.setHeader("Content-Type", "text/plain");
-            hideBuilder.setIncludeCredentials(true);
-            try {
-                hideBuilder.sendRequest("true", new RequestCallback() {
-                    @Override
-                    public void onResponseReceived(Request request, Response response) {
-                        if (response.getStatusCode() == Response.SC_OK) {
-                            feedbackLabel.setText("Nota rimossa dalla tua vista.");
-                            panel.clear();
-                            panel.add(new ViewNotesPanel());
-                        } else {
-                            feedbackLabel.setText("Errore: " + response.getStatusText());
-                        }
-                    }
-
-                    @Override
-                    public void onError(Request request, Throwable exception) {
-                        feedbackLabel.setText("Errore: " + exception.getMessage());
-                    }
-                });
-            } catch (RequestException e) {
-                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-            }
-        });
+        setupNavigationHandlers();
+        setupTagHandlers();
+        setupNoteActionHandlers();
     }
 
     private void getTags() {
@@ -612,5 +308,293 @@ public class NoteDetailPanel extends Composite {
             }
         }
         return note;
+    }
+
+    private HorizontalPanel createButtonPanel() {
+        HorizontalPanel buttonPanel = new HorizontalPanel();
+        buttonPanel.setSpacing(10);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(editButton);
+        buttonPanel.add(duplicateButton);
+        buttonPanel.add(viewHistory);
+        buttonPanel.add(hideButton);
+        buttonPanel.add(backButton);
+        return buttonPanel;
+    }
+
+    private void setupNavigationHandlers() {
+        backButton.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new ViewNotesPanel());
+        });
+        viewHistory.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new NoteHistoryPanel(note));
+        });
+        hideButton.addClickHandler(event -> {
+            if (note.isOwner(email)) {
+                Window.alert("Il proprietario della nota non può rimuoversi dalla visualizzazione della nota.");
+                return;
+            }
+            String hideUrl = GWT.getHostPageBaseURL() + "api/notes/hide?id=" + note.getId();
+            RequestBuilder hideBuilder = new RequestBuilder(RequestBuilder.PUT, hideUrl);
+            hideBuilder.setHeader("Content-Type", "text/plain");
+            hideBuilder.setIncludeCredentials(true);
+            try {
+                hideBuilder.sendRequest("true", new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        if (response.getStatusCode() == Response.SC_OK) {
+                            feedbackLabel.setText("Nota rimossa dalla tua vista.");
+                            panel.clear();
+                            panel.add(new ViewNotesPanel());
+                        } else {
+                            feedbackLabel.setText("Errore: " + response.getStatusText());
+                        }
+                    }
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        feedbackLabel.setText("Errore: " + exception.getMessage());
+                    }
+                });
+            } catch (RequestException e) {
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+            }
+        });
+    }
+
+    private void setupTagHandlers() {
+        addTagButton.addClickHandler(event -> {
+            String newTag = newTagBox.getText().trim();
+            if (!newTag.isEmpty()) {
+                JSONObject payload = new JSONObject();
+                payload.put("name", new JSONString(newTag));
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                        GWT.getHostPageBaseURL() + "api/tags");
+                builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
+                try {
+                    builder.sendRequest(payload.toString(), new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText(tagLogName + " created!");
+                                updateTagList(false, newTag);
+                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
+                                feedbackLabel.setText(tagLogName + " already exists.");
+                                updateTagList(true, newTag);
+                            } else {
+                                feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
+                            }
+                        }
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+                }
+            } else {
+                Window.alert("Inserisci un nome per il tag.");
+            }
+        });
+    }
+
+    private void setupNoteActionHandlers() {
+        deleteButton.addClickHandler(event -> {
+            if (note.getPermission().canEdit(email, note)) {
+                String noteId = note.getId();
+                String url = GWT.getHostPageBaseURL() + "api/notes?id=" + noteId;
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.DELETE, url);
+                builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
+                try {
+                    builder.sendRequest(null, new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText("Nota eliminata!");
+                                panel.clear();
+                                panel.add(new ViewNotesPanel());
+                            } else {
+                                feedbackLabel.setText("Eliminazione fallita: " + response.getText());
+                            }
+                        }
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore durante l'eliminazione: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+                }
+            } else {
+                Window.alert("Non hai i permessi necessari per eliminare questa nota.");
+            }
+        });
+
+        duplicateButton.addClickHandler(event -> {
+            if (note.getPermission().canEdit(email, note)) {
+                JSONObject payload = new JSONObject();
+                JSONArray versionsArray = new JSONArray();
+                for (int i = 0; i < note.getAllVersions().size(); i++) {
+                    Version v = note.getAllVersions().get(i);
+                    JSONObject vObj = new JSONObject();
+                    vObj.put("title", new JSONString(
+                            (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
+                    vObj.put("content", new JSONString(v.getContent()));
+                    if (v.getUpdatedAt() != null) {
+                        vObj.put("updatedAt", new JSONString(dateFormat.format(v.getUpdatedAt())));
+                    }
+                    versionsArray.set(i, vObj);
+                }
+                payload.put("versions", versionsArray);
+                JSONArray tagsArray = new JSONArray();
+                String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
+                for (int i = 0; i < noteTags.length; i++) {
+                    tagsArray.set(i, new JSONString(noteTags[i]));
+                }
+                payload.put("tags", tagsArray);
+                payload.put("ownerEmail", new JSONString(note.getOwnerEmail()));
+                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
+                payload.put("permission", new JSONString(selectedPermission));
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                        GWT.getHostPageBaseURL() + "api/notes");
+                builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
+                try {
+                    builder.sendRequest(payload.toString(), new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText("Nota duplicata!");
+                            } else {
+                                feedbackLabel.setText("Duplicazione fallita: " + response.getText());
+                            }
+                        }
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+                }
+            } else {
+                Window.alert("Non hai i permessi necessari per duplicare questa nota.");
+            }
+        });
+
+        editButton.addClickHandler(event -> {
+            // existing editButton handler content unchanged
+            if (!isEditMode) {
+                if (note.getPermission().canEdit(email, note)) {
+                    isEditMode = true;
+                    titleBox.setEnabled(true);
+                    contentBox.setEnabled(true);
+                    tagListBox.setEnabled(true);
+                    newTagBox.setEnabled(true);
+                    addTagButton.setEnabled(true);
+
+                    if (note.isOwner(Session.getInstance().getUserEmail())) {
+                        permissionListBox.setEnabled(true);
+                    }
+                    editButton.setText("Salva modifiche");
+
+                    String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
+                    for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                        String tag = tagListBox.getValue(i);
+                        boolean isSelected = false;
+                        for (String noteTag : noteTags) {
+                            if (tag.equals(noteTag)) {
+                                isSelected = true;
+                                break;
+                            }
+                        }
+                        tagListBox.setItemSelected(i, isSelected);
+                    }
+                } else {
+                    Window.alert("Non hai i permessi necessari per modificare questa nota.");
+                }
+            } else {
+                String title = titleBox.getText().trim();
+                String content = contentBox.getText().trim();
+                if (title.isEmpty() || content.isEmpty()) {
+                    Window.alert("Titolo e contenuto sono obbligatori.");
+                    return;
+                }
+                JSONObject payload = new JSONObject();
+                payload.put("title", new JSONString(title));
+                payload.put("content", new JSONString(content));
+                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
+                payload.put("permission", new JSONString(selectedPermission));
+                JSONArray tagsArray = new JSONArray();
+                int tagIndex = 0;
+                for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                    if (tagListBox.isItemSelected(i)) {
+                        String tagValue = tagListBox.getItemText(i);
+                        if (tagValue != null && !tagValue.trim().isEmpty()) {
+                            tagsArray.set(tagIndex++, new JSONString(tagValue.trim()));
+                        }
+                    }
+                }
+                payload.put("tags", tagsArray);
+                DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
+                payload.put("lastKnownUpdate", new JSONString(fmt.format(note.getCurrentVersion().getUpdatedAt())));
+                String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
+                RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
+                builder.setHeader("Content-Type", "application/json");
+                builder.setIncludeCredentials(true);
+                try {
+                    builder.sendRequest(payload.toString(), new RequestCallback() {
+                        @Override
+                        public void onResponseReceived(Request request, Response response) {
+                            if (response.getStatusCode() == Response.SC_OK) {
+                                feedbackLabel.setText("Nota modificata con successo!");
+                                Version newVersion = new ConcreteVersion();
+                                newVersion.setTitle(title);
+                                newVersion.setContent(content);
+                                newVersion.setUpdatedAt(new Date());
+                                note.newVersion(newVersion);
+                                List<String> selectedTags = new ArrayList<>();
+                                for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                                    if (tagListBox.isItemSelected(i)) {
+                                        selectedTags.add(tagListBox.getValue(i));
+                                    }
+                                }
+                                String[] tagsArray = selectedTags.toArray(new String[0]);
+                                note.setTags(tagsArray);
+                                String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
+                                tagsLabel.setText("Tag: " + tagsString);
+                                titleBox.setText(newVersion.getTitle());
+                                contentBox.setText(newVersion.getContent());
+                                lastModifiedDateLabel
+                                        .setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
+                                isEditMode = false;
+                                titleBox.setEnabled(false);
+                                contentBox.setEnabled(false);
+                                tagListBox.setEnabled(false);
+                                newTagBox.setEnabled(false);
+                                addTagButton.setEnabled(false);
+                                permissionListBox.setEnabled(false);
+                                editButton.setText("Modifica");
+                            } else if (response.getStatusCode() == Response.SC_CONFLICT) {
+                                feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
+                                getNoteById(note.getId(), payload);
+                            } else {
+                                feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
+                            }
+                        }
+                        @Override
+                        public void onError(Request request, Throwable exception) {
+                            feedbackLabel.setText("Errore: " + exception.getMessage());
+                        }
+                    });
+                } catch (RequestException e) {
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+                }
+            }
+        });
     }
 }
