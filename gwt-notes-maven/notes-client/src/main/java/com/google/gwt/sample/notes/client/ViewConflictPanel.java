@@ -20,6 +20,7 @@ import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.RootPanel;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -181,8 +182,8 @@ public class ViewConflictPanel extends Composite {
         });
 
         backButton.addClickHandler(event -> {
-            mainPanel.clear();
-            mainPanel.add(new NoteDetailPanel(originalNote));
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new NoteDetailPanel(originalNote));
         });
     }
 
@@ -373,8 +374,9 @@ public class ViewConflictPanel extends Composite {
                 @Override
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
-                        mainPanel.clear();
-                        mainPanel.add(new ViewNotesPanel());
+                        feedbackLabel.setText("Nota modificata!");
+                        RootPanel.get("mainPanel").clear();
+                        RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else if (response.getStatusCode() == Response.SC_CONFLICT) {
                         feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
 
@@ -437,8 +439,9 @@ public class ViewConflictPanel extends Composite {
                 @Override
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
-                        mainPanel.clear();
-                        mainPanel.add(new ViewNotesPanel());
+                        feedbackLabel.setText("Nota modificata!");
+                        RootPanel.get("mainPanel").clear();
+                        RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else if (response.getStatusCode() == Response.SC_CONFLICT) {
                         feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
 
@@ -482,8 +485,8 @@ public class ViewConflictPanel extends Composite {
                         if (note == null) {
                             feedbackLabel.setText("Nota non trovata o malformata.");
                         } else {
-                            mainPanel.clear();
-                            mainPanel.add(new ViewConflictPanel(note, payload));
+                            RootPanel.get("mainPanel").clear();
+                            RootPanel.get("mainPanel").add(new ViewConflictPanel(note, payload));
                         }
                     } else {
                         feedbackLabel.setText("Errore nel recupero della nota: " + response.getStatusText());

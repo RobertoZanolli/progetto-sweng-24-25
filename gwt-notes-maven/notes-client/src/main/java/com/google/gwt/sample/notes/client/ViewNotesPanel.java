@@ -2,6 +2,7 @@ package com.google.gwt.sample.notes.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
@@ -246,13 +247,13 @@ public class ViewNotesPanel extends Composite {
         });
 
         createNoteButton.addClickHandler(event -> {
-            bodyPanle.clear();
-            bodyPanle.add(new CreateNotePanel());
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new CreateNotePanel());
         });
 
         exitButton.addClickHandler(event -> {
-            bodyPanle.clear();
-            bodyPanle.add(new HomePanel());
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new HomePanel());
 
             Session.getInstance().destroy();
         });
@@ -263,7 +264,7 @@ public class ViewNotesPanel extends Composite {
     }
 
     private void applyFilters() {
-        filteredNotes = NotesFilter.filter(
+        filteredNotes = ViewNotesFilter.filter(
             notes,
             currentKeyword,
             currentSelectedTags,
@@ -309,8 +310,8 @@ public class ViewNotesPanel extends Composite {
             // Bottone per i dettagli
             Button noteDetailButton = new Button("Vedi nota");
             noteDetailButton.addClickHandler(event -> {
-                bodyPanle.clear();
-                bodyPanle.add(new NoteDetailPanel(note));
+                RootPanel.get("mainPanel").clear();
+                RootPanel.get("mainPanel").add(new NoteDetailPanel(note));
             });
             notePanel.add(noteDetailButton);
 

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.google.gwt.sample.notes.shared.Note;
 
-public class NotesFilter {
+public class ViewNotesFilter {
     /**
      * Filters the given list of notes based on the provided criteria.
      *

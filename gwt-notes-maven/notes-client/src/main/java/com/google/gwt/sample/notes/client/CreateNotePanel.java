@@ -19,6 +19,7 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.user.client.ui.RootPanel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -192,8 +193,8 @@ public class CreateNotePanel extends Composite {
         });
 
         backButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new ViewNotesPanel());
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new ViewNotesPanel());
         });
     }
 

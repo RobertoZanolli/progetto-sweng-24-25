@@ -6,6 +6,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 public class notes implements EntryPoint {
     @Override
     public void onModuleLoad() {
+        RootPanel.get("mainPanel").clear();
         RootPanel.get("mainPanel").add(new HomePanel());
     }
 }
