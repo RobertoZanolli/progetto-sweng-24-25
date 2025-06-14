@@ -1,8 +1,8 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.NoteIdGenerator;
 import com.google.gwt.sample.notes.shared.Permission;
@@ -11,13 +11,13 @@ import com.google.gwt.sample.notes.shared.Version;
 import java.util.Date;
 
 public class NoteFactory {
-    private static final Gson gson = new Gson();
+
+    private static final GsonJsonParser parser = new GsonJsonParser();
     private static NoteFactory instance;
 
     private NoteFactory(){}
 
-    public synchronized NoteFactory getInstance(){
-
+    public static synchronized NoteFactory getInstance(){
         if (instance == null){
             instance = new NoteFactory();
         }
@@ -27,7 +27,7 @@ public class NoteFactory {
 
     // Factory method standard
     public static synchronized Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
-        Note note = new Note();
+        Note note = new ConcreteNote();
 
         NoteIdGenerator generator = new NoteIdGenerator(1);
         long id = generator.nextId();
@@ -45,7 +45,7 @@ public class NoteFactory {
 
     // Factory method con id
     public static synchronized Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
-        Note note = new Note();
+        Note note = new ConcreteNote();
         note.setId(id);
         note.setTags(tags);
         note.setOwnerEmail(ownerEmail);
@@ -62,7 +62,7 @@ public class NoteFactory {
 
     // Factory method da JSON
     public static synchronized Note fromJson(String json) {
-        Note note = gson.fromJson(json, Note.class);
+        Note note = parser.fromJson(json, ConcreteNote.class);
 
         // SPOSTARE CONTROLLI QUI (?)
 
@@ -76,10 +76,6 @@ public class NoteFactory {
             long id = generator.nextId();
             note.setId(Long.toString(id));
         }
-
-/*         if (note.getOwnerEmail() == null) {
-            note.setOwnerEmail();
-        } */
         
         if(note.getCurrentVersion().getUpdatedAt()==null){
             note.getCurrentVersion().setUpdatedAt(now);
@@ -105,6 +101,6 @@ public class NoteFactory {
 
     // Per serializzazione
     public static synchronized String toJson(Note note) {
-        return gson.toJson(note);
+        return parser.toJson(note);
     }
 }

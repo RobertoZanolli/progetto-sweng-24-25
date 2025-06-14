@@ -1,6 +1,5 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.User;
 import com.password4j.Password;
 import org.mapdb.HTreeMap;
@@ -9,7 +8,6 @@ import javax.servlet.http.*;
 import java.io.*;
 
 public class LoginServlet extends HttpServlet {
-    private static final Gson gson = new Gson();
     private String dbPath = null;
     private UserDB userDB;
 
@@ -32,7 +30,8 @@ public class LoginServlet extends HttpServlet {
         }
         User user;
         try {
-            user = gson.fromJson(req.getReader(), User.class);
+            String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+            user = UserFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("Invalid user data");

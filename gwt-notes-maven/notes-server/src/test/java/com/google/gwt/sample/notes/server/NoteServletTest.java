@@ -1,9 +1,8 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Tag;
-import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteTag;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Permission;
 
 import org.junit.After;
@@ -31,7 +30,6 @@ import static org.junit.Assert.*;
 
 public class NoteServletTest {
     private NoteServlet servlet;
-    private Gson gson = new Gson();
     private File tempDbFileNote;
     private File tempDbFileTag;
     private final String noteTableName = "notesTest";
@@ -56,7 +54,7 @@ public class NoteServletTest {
         assertNotNull(noteDB.getMap());
         assertNotNull(tagDB.getMap());
         // Add a tag for testing
-        tagDB.getMap().put("testTag", new Tag("testTag"));
+        tagDB.getMap().put("testTag", new ConcreteTag("testTag"));
         tagDB.commit();
     }
 
@@ -271,7 +269,7 @@ public class NoteServletTest {
     @Test
     public void testCreateNewNote() throws Exception {
         Note note = createValidNote("testTag2");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -287,7 +285,7 @@ public class NoteServletTest {
     @Test
     public void testCreateDuplicateNote() throws Exception {
         Note note = createValidNote("dupId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -311,7 +309,7 @@ public class NoteServletTest {
     public void testCreateNoteWithEmptyTitle() throws Exception {
         Note note = createValidNote("emptyTitleId");
         note.getCurrentVersion().setTitle("");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -328,7 +326,7 @@ public class NoteServletTest {
     public void testCreateNoteWithNullTags() throws Exception {
         Note note = createValidNote("nullTagId");
         note.setTags(new String[] { null });
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -345,7 +343,7 @@ public class NoteServletTest {
     public void testCreateNoteWithNonexistentTag() throws Exception {
         Note note = createValidNote("badTagId");
         note.setTags(new String[] { "notExistTag" });
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -371,7 +369,7 @@ public class NoteServletTest {
     @Test
     public void testGetNotes() throws Exception {
         Note note = createValidNote("getId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -395,7 +393,7 @@ public class NoteServletTest {
     @Test
     public void testDeleteExistingNote() throws Exception {
         Note note = createValidNote("delId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -441,7 +439,7 @@ public class NoteServletTest {
         // Create a note without setting permission (permission should be null)
         Note note = createValidNote("nullPermId");
         // Do not call note.setPermission(...) so JSON has no "permission" field
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -478,7 +476,7 @@ public class NoteServletTest {
     @Test
     public void testUpdateNoteWithNewVersionAndTags() throws Exception {
         Note note = createValidNote("putId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -490,7 +488,7 @@ public class NoteServletTest {
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        Version newVersion = new Version();
+        ConcreteVersion newVersion = new ConcreteVersion();
         newVersion.setTitle("Updated Title");
         newVersion.setContent("Updated Content");
         newVersion.setUpdatedAt(new Date());
@@ -507,7 +505,7 @@ public class NoteServletTest {
     @Test
     public void testUpdateNoteWithMissingTitle() throws Exception {
         Note note = createValidNote("putMissingTitleId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -532,7 +530,7 @@ public class NoteServletTest {
     @Test
     public void testUpdateNoteWithNonexistentTag() throws Exception {
         Note note = createValidNote("putBadTagId");
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -567,7 +565,7 @@ public class NoteServletTest {
         // Owner can view, others cannot
         Note note = createValidNote("privateId");
         note.setPermission(Permission.PRIVATE);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -594,7 +592,7 @@ public class NoteServletTest {
         // Owner can view, others cannot
         Note note = createValidNote("privateId");
         note.setPermission(Permission.PRIVATE);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -632,7 +630,7 @@ public class NoteServletTest {
         // Owner creates note with READ permission
         Note note = createValidNote("readId");
         note.setPermission(Permission.READ);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -673,7 +671,7 @@ public class NoteServletTest {
         // Owner creates note with WRITE permission
         Note note = createValidNote("writeId");
         note.setPermission(Permission.WRITE);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -747,7 +745,7 @@ public class NoteServletTest {
         // Il proprietario crea una nota con permesso PRIVATE
         Note note = createValidNote("permId");
         note.setPermission(Permission.PRIVATE);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
@@ -780,7 +778,7 @@ public class NoteServletTest {
     public void testNonOwnerChangePermission() throws Exception {
         Note note = createValidNote("permId2");
         note.setPermission(Permission.READ);
-        String json = gson.toJson(note);
+        String json = NoteFactory.toJson(note);
 
         // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();

@@ -51,6 +51,6 @@
 		<url-pattern>/api/login</url-pattern>
 	</servlet-mapping>
 	<session-config>
-		<session-timeout>30</session-timeout> <!-- in minuti -->
+		<session-timeout>60</session-timeout> <!-- in minuti -->
 	</session-config>
 </web-app>

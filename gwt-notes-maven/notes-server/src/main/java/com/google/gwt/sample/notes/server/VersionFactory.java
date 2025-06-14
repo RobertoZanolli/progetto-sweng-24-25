@@ -1,17 +1,17 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
 
 public class VersionFactory {
-    private static final Gson gson = new Gson();
+    private static final JsonParser parser = new GsonJsonParser();
     private static VersionFactory instance;
 
     private VersionFactory(){}
 
-    public synchronized VersionFactory getInstance(){
+    public static synchronized VersionFactory getInstance(){
         
         if (instance == null){
             instance = new VersionFactory();
@@ -21,7 +21,7 @@ public class VersionFactory {
     }
 
     public static synchronized Version create(String title, String content) {
-        Version version = new Version();
+        Version version = new ConcreteVersion();
 
         version.setTitle(title);
         version.setContent(content);
@@ -33,9 +33,7 @@ public class VersionFactory {
 
     // Factory method da JSON
     public static synchronized Version fromJson(String json) {
-        Version version = gson.fromJson(json, Version.class);
-
-        // SPOSTARE CONTROLLI QUI (?)
+        Version version = parser.fromJson(json, ConcreteVersion.class);
 
         Date now = new Date();
         if (version.getUpdatedAt() == null) {
@@ -47,6 +45,6 @@ public class VersionFactory {
 
     // Per serializzazione
     public static synchronized String toJson(Version version) {
-        return gson.toJson(version);
+        return parser.toJson(version);
     }
 }
