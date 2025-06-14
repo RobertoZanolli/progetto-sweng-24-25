@@ -6,7 +6,6 @@ import com.google.gwt.sample.notes.shared.Note;
 import javax.servlet.http.*;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,8 +46,14 @@ public class NoteServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
-        String noteJson = req.getReader().lines().collect(Collectors.joining());
-
+        String noteJson;
+        try {
+            noteJson = req.getReader().lines().collect(Collectors.joining());
+        } catch (IOException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid Note data");
+            return;
+        }
         try {
             noteService.createNote(noteJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -103,8 +108,14 @@ public class NoteServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
         String noteId = req.getParameter("id");
-        String updateJson = req.getReader().lines().collect(Collectors.joining());
-
+        String updateJson;
+        try {
+            updateJson = req.getReader().lines().collect(Collectors.joining());
+        } catch (IOException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid update data");
+            return;
+        }
         try {
             noteService.updateNote(noteId, updateJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);

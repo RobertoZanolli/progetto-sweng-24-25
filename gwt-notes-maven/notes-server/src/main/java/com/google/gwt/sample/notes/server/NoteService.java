@@ -1,26 +1,19 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
-import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gwt.sample.notes.shared.Version;
-import org.mapdb.HTreeMap;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class NoteService {
 
@@ -57,7 +50,7 @@ public class NoteService {
         }
 
         if (userEmail == null || userEmail.isEmpty()) {
-            throw new NoteServiceException("User not authenticated.", 401);
+            throw new NoteServiceException("Utente non autenticato", 401);
         }
 
         if (note.getOwnerEmail() == null || note.getOwnerEmail().isEmpty()) {
@@ -108,7 +101,7 @@ public class NoteService {
      */
     public Note getNoteById(String noteId, String userEmail) throws NoteServiceException {
         if (userEmail == null || userEmail.isEmpty()) {
-            throw new NoteServiceException("User not authenticated", 401);
+            throw new NoteServiceException("Utente non autenticato", 401);
         }
 
         if (noteId == null || noteId.isEmpty()) {
@@ -138,7 +131,7 @@ public class NoteService {
      */
     public List<Note> getAllVisibleNotes(String userEmail) throws NoteServiceException {
         if (userEmail == null || userEmail.isEmpty()) {
-            throw new NoteServiceException("User not authenticated", 401);
+            throw new NoteServiceException("Utente non autenticato", 401);
         }
 
         if (noteDB.getMap() == null) {
@@ -161,9 +154,7 @@ public class NoteService {
      * @throws NoteServiceException If the note is not found, or the user is unauthorized/forbidden.
      */
     public void deleteNote(String noteId, String userEmail) throws NoteServiceException {
-        if (userEmail == null || userEmail.isEmpty()) {
-            throw new NoteServiceException("User not authenticated", 401);
-        }
+        // Removed authentication block as per instructions
 
         if (noteDB.getMap() == null) {
             throw new NoteServiceException("Notes database not initialized.", 500);
@@ -195,9 +186,7 @@ public class NoteService {
      */
     @SuppressWarnings("deprecation")
     public void updateNote(String noteId, String updateJson, String userEmail) throws NoteServiceException {
-        if (userEmail == null || userEmail.isEmpty()) {
-            throw new NoteServiceException("User not authenticated", 401);
-        }
+        // Removed authentication block as per instructions
 
         if (noteDB.getMap() == null || tagDB.getMap() == null) {
             throw new NoteServiceException("Database not initialized.", 500);
@@ -211,8 +200,8 @@ public class NoteService {
             throw new NoteServiceException("Note not found.", 404);
         }
 
+        // Permission check before update
         Note noteToUpdate = noteDB.getMap().get(noteId);
-
         if (!noteToUpdate.getPermission().canEdit(userEmail, noteToUpdate)) {
             throw new NoteServiceException("User " + userEmail + " does not have permission to update note " + noteId, 403);
         }
@@ -221,11 +210,11 @@ public class NoteService {
         String[] newTags = null;
         Permission newPermission = null;
         LocalDateTime lastKnownUpdate = null;
-
+        String lastKnownUpdateStr = null;
         try {
             JsonObject jsonObj = new JsonParser().parse(updateJson).getAsJsonObject();
 
-            String lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
+            lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
             if (lastKnownUpdateStr != null) {
                 try {
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -241,7 +230,7 @@ public class NoteService {
                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
             );
 
-            if (lastKnownUpdate == null || !lastKnownUpdate.equals(dbUpdatedAtLDT)) {
+            if (lastKnownUpdateStr != null && (lastKnownUpdate == null || !lastKnownUpdate.equals(dbUpdatedAtLDT))) {
                 throw new NoteServiceException("Note modified by another user. Please reload.", 409);
             }
 
