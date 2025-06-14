@@ -13,17 +13,17 @@ import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
+import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class ViewConflictPanel extends Composite {
 
@@ -511,7 +511,7 @@ public class ViewConflictPanel extends Composite {
 
         DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
 
-        Note note = new Note();
+        Note note = new ConcreteNote();
         // ID
         if (obj.containsKey("id") && obj.get("id").isString() != null) {
             note.setId(obj.get("id").isString().stringValue());
@@ -553,7 +553,7 @@ public class ViewConflictPanel extends Composite {
             for (int v = 0; v < versionsArray.size(); v++) {
                 JSONObject versionObj = versionsArray.get(v).isObject();
                 if (versionObj != null) {
-                    Version version = new Version();
+                    Version version = new ConcreteVersion();
                     // Title
                     if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
                         version.setTitle(versionObj.get("title").isString().stringValue());

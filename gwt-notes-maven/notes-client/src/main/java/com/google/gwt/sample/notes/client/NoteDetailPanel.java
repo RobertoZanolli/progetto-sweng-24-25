@@ -12,6 +12,7 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
+import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.ConcreteVersion;
 
 import java.util.ArrayList;
@@ -543,7 +544,7 @@ public class NoteDetailPanel extends Composite {
 
         DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
 
-        Note note = new Note();
+        Note note = new ConcreteNote();
         // ID
         if (obj.containsKey("id") && obj.get("id").isString() != null) {
             note.setId(obj.get("id").isString().stringValue());
@@ -585,7 +586,7 @@ public class NoteDetailPanel extends Composite {
             for (int v = 0; v < versionsArray.size(); v++) {
                 JSONObject versionObj = versionsArray.get(v).isObject();
                 if (versionObj != null) {
-                    Version version = new Version();
+                    Version version = new ConcreteVersion();
                     // Title
                     if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
                         version.setTitle(versionObj.get("title").isString().stringValue());

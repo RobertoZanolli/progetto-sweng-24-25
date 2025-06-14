@@ -10,7 +10,7 @@ public class NoteDB extends AbstractDB<String, Note> {
     private static NoteDB instance;
 
     private NoteDB(File dbFile) {
-        super(dbFile, "notes", Serializer.STRING, Serializer.JAVA);
+        super(dbFile, "notes", Serializer.STRING, (Serializer<Note>) Serializer.JAVA);
     }
 
     public static synchronized NoteDB getInstance(File dbFile) {
