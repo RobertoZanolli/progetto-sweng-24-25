@@ -58,7 +58,7 @@ public class NoteServlet extends HttpServlet {
             noteService.createNote(noteJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("Note created successfully");
-        } catch (NoteService.NoteServiceException e) {
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
@@ -83,7 +83,7 @@ public class NoteServlet extends HttpServlet {
                 resp.getWriter().write(json);
             }
             resp.setStatus(HttpServletResponse.SC_OK);
-        } catch (NoteService.NoteServiceException e) {
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
@@ -98,7 +98,7 @@ public class NoteServlet extends HttpServlet {
             noteService.deleteNote(noteId, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("Note with ID " + noteId + " deleted successfully");
-        } catch (NoteService.NoteServiceException e) {
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
@@ -120,7 +120,7 @@ public class NoteServlet extends HttpServlet {
             noteService.updateNote(noteId, updateJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("Note updated with new version");
-        } catch (NoteService.NoteServiceException e) {
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
