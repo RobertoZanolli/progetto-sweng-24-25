@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CreateNotePanel extends Composite {
-
     private final VerticalPanel panel = new VerticalPanel();
     private final TextBox titleBox = new TextBox();
     private final TextArea contentBox = new TextArea();
@@ -209,8 +208,7 @@ public class CreateNotePanel extends Composite {
 
     private void updateTagList(Boolean exists, String newTag) {
         if (!exists) {
-            // Usiamo l'indice come valore, ma si può usare anche un UUID o il testo stesso
-            tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
+            tagListBox.addItem(newTag);  // use tag text as value
             newTagBox.setText("");
         } else {
             feedbackLabel.setText("Tag già presente.");
