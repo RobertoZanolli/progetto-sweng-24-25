@@ -2,7 +2,6 @@ package com.google.gwt.sample.notes.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
@@ -42,11 +41,15 @@ public class ViewNotesPanel extends Composite {
     private final TextBox searchBox = new TextBox();
     private final Button createNoteButton = new Button("Nuova Nota");
     private final Button exitButton = new Button("Esci");
+    private final Button refreshButton = new Button("Aggiorna Lista");
     private final Button removeAllFiltersButton = new Button("Rimuovi tutti i filtri");
     private final DateBox startDate = new DateBox();
     private final DateBox endDate = new DateBox();
     private final VerticalPanel viewNotesPanel = new VerticalPanel();
-    private final Button btnDeleteDateFilter = new Button("Rimuovi filtro data");
+    private final Button btnDeleteDateFilter = new Button("Rimuovi filtro data modifica");
+    private final DateBox startCreatedDate = new DateBox();
+    private final DateBox endCreatedDate = new DateBox();
+    private final Button btnDeleteCreatedDateFilter = new Button("Rimuovi filtro data creazione");
 
     @SuppressWarnings("deprecation")
     private final ListBox tagListBox = new ListBox(true);
@@ -83,6 +86,10 @@ public class ViewNotesPanel extends Composite {
         endDate.setFormat(dateFormat);
         startDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
         endDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+        startCreatedDate.setFormat(dateFormat);
+        endCreatedDate.setFormat(dateFormat);
+        startCreatedDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
+        endCreatedDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
 
 
 
@@ -96,6 +103,16 @@ public class ViewNotesPanel extends Composite {
         datePanel.add(btnDeleteDateFilter);
         bodyPanle.add(datePanel);
 
+        HorizontalPanel createdDatePanel = new HorizontalPanel();
+        createdDatePanel.setSpacing(10);
+        createdDatePanel.add(new Label("Cerca per data di creazione: "));
+        createdDatePanel.add(new Label("Da: "));
+        createdDatePanel.add(startCreatedDate);
+        createdDatePanel.add(new Label("A: "));
+        createdDatePanel.add(endCreatedDate);
+        createdDatePanel.add(btnDeleteCreatedDateFilter);
+        bodyPanle.add(createdDatePanel);
+
         getNotes();
 
         // Bottone per la navigazione
@@ -103,6 +120,7 @@ public class ViewNotesPanel extends Composite {
         buttonPanel.setSpacing(10);
         buttonPanel.add(createNoteButton);
         buttonPanel.add(removeAllFiltersButton);
+        buttonPanel.add(refreshButton);
         buttonPanel.add(exitButton);
         bodyPanle.add(feedbackLabel);
         bodyPanle.add(buttonPanel);
@@ -172,6 +190,41 @@ public class ViewNotesPanel extends Composite {
             applyFilters();
         });
 
+        // Gestione filtro data di creazione
+        startCreatedDate.addValueChangeHandler(event -> {
+            if (endCreatedDate.getValue() != null && startCreatedDate.getValue() != null) {
+                if (!startCreatedDate.getValue().before(endCreatedDate.getValue())) {
+                    startCreatedDate.setValue(null);
+                    Window.alert("La data di inizio creazione deve essere precedente alla data di fine.");
+                    return;
+                }
+            }
+            applyFilters();
+        });
+        endCreatedDate.addValueChangeHandler(event -> {
+            if (startCreatedDate.getValue() != null && endCreatedDate.getValue() != null) {
+                if (!endCreatedDate.getValue().after(startCreatedDate.getValue())) {
+                    endCreatedDate.setValue(null);
+                    Window.alert("La data di fine creazione deve essere successiva alla data di inizio.");
+                    return;
+                }
+            }
+            applyFilters();
+        });
+        btnDeleteCreatedDateFilter.addClickHandler(event -> {
+            startCreatedDate.setValue(null);
+            endCreatedDate.setValue(null);
+            // Mantieni gli altri filtri
+            currentKeyword = searchBox.getText().toLowerCase();
+            currentSelectedTags.clear();
+            for (int i = 0; i < tagListBox.getItemCount(); i++) {
+                if (tagListBox.isItemSelected(i)) {
+                    currentSelectedTags.add(tagListBox.getItemText(i).toLowerCase());
+                }
+            }
+            applyFilters();
+        });
+
         removeAllFiltersButton.addClickHandler(event -> {
             
             searchBox.setText("");
@@ -186,6 +239,8 @@ public class ViewNotesPanel extends Composite {
             
             startDate.setValue(null);
             endDate.setValue(null);
+            startCreatedDate.setValue(null);
+            endCreatedDate.setValue(null);
             
             applyFilters();
         });
@@ -201,40 +256,22 @@ public class ViewNotesPanel extends Composite {
 
             Session.getInstance().destroy();
         });
+
+        refreshButton.addClickHandler(event -> {
+            getNotes();
+        });
     }
 
     private void applyFilters() {
-        filteredNotes = notes.stream()
-                .filter(n -> {
-                    // Filtro per keyword
-                    String title = n.getCurrentVersion().getTitle() != null
-                            ? n.getCurrentVersion().getTitle().toLowerCase()
-                            : "";
-                    String content = n.getCurrentVersion().getContent() != null
-                            ? n.getCurrentVersion().getContent().toLowerCase()
-                            : "";
-                    boolean matchesKeyword = currentKeyword.isEmpty() || title.contains(currentKeyword)
-                            || content.contains(currentKeyword);
-
-                    // Filtro per tag
-                    String[] noteTags = n.getTags() != null ? n.getTags() : new String[0];
-                    boolean matchesTags = currentSelectedTags.isEmpty() ||
-                            currentSelectedTags.stream().anyMatch(
-                                    tag -> java.util.Arrays.stream(noteTags).anyMatch(t -> t.equalsIgnoreCase(tag)));
-
-                    // Filtro per data di modifica
-
-                    boolean matchesDate = true;
-                    if (startDate.getValue() != null && endDate.getValue() != null) {
-                        // Se le date non sono selezionate, ritorna solo keyword e tag
-                        matchesDate = n.getCurrentVersion().getUpdatedAt() != null &&
-                                !n.getCurrentVersion().getUpdatedAt().before(startDate.getValue()) &&
-                                !n.getCurrentVersion().getUpdatedAt().after(endDate.getValue());
-                    }
-
-                    return matchesKeyword && matchesTags && matchesDate;
-                })
-                .collect(Collectors.toList());
+        filteredNotes = NotesFilter.filter(
+            notes,
+            currentKeyword,
+            currentSelectedTags,
+            startDate.getValue(),
+            endDate.getValue(),
+            startCreatedDate.getValue(),
+            endCreatedDate.getValue()
+        );
         renderNotes();
     }
 
