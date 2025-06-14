@@ -362,8 +362,8 @@ public class ViewConflictPanel extends Composite {
             }
         }
         payload.put("tags", tagsArray);
-        DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-        payload.put("lastKnownUpdate", new JSONString(fmt.format(originalNote.getCurrentVersion().getUpdatedAt())));
+        payload.put("lastKnownVersion", new JSONString(String.valueOf(originalNote.currentVersionNumber())));
+
 
         String url = GWT.getHostPageBaseURL() + "api/notes?id=" + originalNote.getId();
         RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
@@ -427,8 +427,8 @@ public class ViewConflictPanel extends Composite {
             }
         }
         payload.put("tags", tagsArray);
-        DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-        payload.put("lastKnownUpdate", new JSONString(fmt.format(originalNote.getCurrentVersion().getUpdatedAt())));
+        payload.put("lastKnownVersion", new JSONString(String.valueOf(originalNote.currentVersionNumber())));
+
 
         String url = GWT.getHostPageBaseURL() + "api/notes?id=" + originalNote.getId();
         RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);

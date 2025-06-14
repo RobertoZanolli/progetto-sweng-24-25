@@ -209,28 +209,26 @@ public class NoteService {
         Version newVersion;
         String[] newTags = null;
         Permission newPermission = null;
-        LocalDateTime lastKnownUpdate = null;
-        String lastKnownUpdateStr = null;
+
         try {
             JsonObject jsonObj = new JsonParser().parse(updateJson).getAsJsonObject();
 
-            lastKnownUpdateStr = jsonObj.has("lastKnownUpdate") ? jsonObj.get("lastKnownUpdate").getAsString() : null;
-            if (lastKnownUpdateStr != null) {
+            int lastKnownVersion = -1;
+            if (jsonObj.has("lastKnownVersion")) {
                 try {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    lastKnownUpdate = LocalDateTime.parse(lastKnownUpdateStr, formatter);
-                } catch (DateTimeParseException e) {
-                    throw new ServiceException("Invalid date format for lastKnownUpdate: " + lastKnownUpdateStr, 400);
+                    lastKnownVersion = Integer.parseInt(jsonObj.get("lastKnownVersion").getAsString());
+                } catch (NumberFormatException e) {
+                    throw new ServiceException("Invalid version number", 400);
                 }
             }
 
-            Date dbUpdatedAt = noteToUpdate.getCurrentVersion().getUpdatedAt();
-            LocalDateTime dbUpdatedAtLDT = LocalDateTime.parse(
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbUpdatedAt),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            );
+            int currentVersionInDB = noteToUpdate.currentVersionNumber();
+            System.out.println("Controllo versione:");
+            System.out.println(" - Versione nota dal client (lastKnownVersion): " + lastKnownVersion);
+            System.out.println(" - Versione attuale nel DB (currentVersionNumber): " + currentVersionInDB);
 
-            if (lastKnownUpdateStr != null && (lastKnownUpdate == null || !lastKnownUpdate.equals(dbUpdatedAtLDT))) {
+
+            if (lastKnownVersion != -1 && lastKnownVersion != currentVersionInDB) {
                 throw new ServiceException("Note modified by another user. Please reload.", 409);
             }
 
