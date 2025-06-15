@@ -165,8 +165,10 @@ public class NoteService {
         }
 
         Note noteToDelete = noteDB.getMap().get(noteId);
-        if (!noteToDelete.getOwnerEmail().equals(userEmail) && !noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
-            throw new ServiceException("L'utente " + userEmail + " non ha il permesso di eliminare la nota " + noteId, 403);
+        if (!noteToDelete.getOwnerEmail().equals(userEmail)
+                && !noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
+            throw new ServiceException("L'utente " + userEmail
+                    + " non ha il permesso di eliminare la nota " + noteId, 403);
         }
 
         noteDB.getMap().remove(noteId);
@@ -233,6 +235,9 @@ public class NoteService {
             }
 
             if (jsonObj.has("permission") && !jsonObj.get("permission").isJsonNull()) {
+                if ((noteToUpdate.getPermission().toString().equals(jsonObj.get("permission").toString())) && (!noteToUpdate.isOwner(userEmail))) {
+                    throw new ServiceException("Solo il proprietario può modificare i permessi", 403);
+                }
                 String permString = jsonObj.get("permission").getAsString();
                 try {
                     newPermission = Permission.valueOf(permString.toUpperCase());
