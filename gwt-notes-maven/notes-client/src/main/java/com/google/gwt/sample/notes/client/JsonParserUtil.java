@@ -48,6 +48,13 @@ public class JsonParserUtil {
         String ownerEmail = obj.get("ownerEmail").isString().stringValue();
         String permStr = obj.get("permission").isString().stringValue();
         Permission perm = Permission.valueOf(permStr);
+        
+        JSONString crt = obj.get("createdAt").isString();
+        Date createdAt = null;
+        if (crt != null) {
+            String dateStr = crt.stringValue().replace("\u202f", " ");
+            createdAt = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").parse(dateStr);
+        }
 
         // versions
         List<Version> versions = new ArrayList<>();
@@ -61,12 +68,8 @@ public class JsonParserUtil {
                 JSONString upd = vObj.get("updatedAt").isString();
                 Date updatedAt = null;
                 if (upd != null) {
-                    try {
-                        String dateStr = upd.stringValue().replace("\u202f", " ");
-                        updatedAt = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").parse(dateStr);
-                    } catch (IllegalArgumentException e) {
-                        // ignore parse errors
-                    }
+                    String dateStr = upd.stringValue().replace("\u202f", " ");
+                    updatedAt = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").parse(dateStr);
                 }
 
                 Version v = new ConcreteVersion();
@@ -94,6 +97,7 @@ public class JsonParserUtil {
         note.setId(id);
         note.setOwnerEmail(ownerEmail);
         note.setPermission(perm);
+        note.setCreatedAt(createdAt);
         for (Version v : versions) {
             note.newVersion(v);
         }
@@ -137,12 +141,8 @@ public class JsonParserUtil {
         }
         // CreatedAt
         if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
-            try {
-                String dateStr = obj.get("createdAt").isString().stringValue().replace("\u202f", " ");
-                note.setCreatedAt(singleDateFormat.parse(dateStr));
-            } catch (IllegalArgumentException e) {
-                // ignore parse errors
-            }
+            String dateStr = obj.get("createdAt").isString().stringValue().replace("\u202f", " ");
+            note.setCreatedAt(singleDateFormat.parse(dateStr));
         }
         // Tags
         if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
@@ -172,12 +172,8 @@ public class JsonParserUtil {
                         v.setContent(vObj.get("content").isString().stringValue());
                     }
                     if (vObj.containsKey("updatedAt") && vObj.get("updatedAt").isString() != null) {
-                        try {
-                            String dateStr = vObj.get("updatedAt").isString().stringValue().replace("\u202f", " ");
-                            v.setUpdatedAt(singleDateFormat.parse(dateStr));
-                        } catch (IllegalArgumentException e) {
-                            // ignore parse errors
-                        }
+                        String dateStr = vObj.get("updatedAt").isString().stringValue().replace("\u202f", " ");
+                        v.setUpdatedAt(singleDateFormat.parse(dateStr));
                     }
                     note.newVersion(v);
                 }

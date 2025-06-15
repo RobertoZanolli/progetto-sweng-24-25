@@ -83,8 +83,6 @@ public class ViewNotesPanel extends Composite {
         startCreatedDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
         endCreatedDate.getTextBox().getElement().setPropertyBoolean("readOnly", true);
 
-
-
         HorizontalPanel datePanel = new HorizontalPanel();
         datePanel.setSpacing(10);
         datePanel.add(new Label("Cerca per data di modifica: "));
