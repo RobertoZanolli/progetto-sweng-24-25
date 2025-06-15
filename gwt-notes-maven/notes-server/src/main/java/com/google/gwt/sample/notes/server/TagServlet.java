@@ -3,17 +3,16 @@ package com.google.gwt.sample.notes.server;
 import com.google.gwt.sample.notes.shared.Tag;
 import com.google.gson.Gson;
 
-import org.mapdb.HTreeMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
+import java.util.Set;
 
 public class TagServlet extends HttpServlet {
     private File dbFile = null;
     private final String tagTableName = "tags";
     private final String tagLogName = "Tag";
-    private TagDB tagDB;
+    private TagService tagService;
 
     public TagServlet() {
         // Default constructor for servlet container
@@ -30,18 +29,11 @@ public class TagServlet extends HttpServlet {
     @Override
     public void init() {
         this.dbFile = dbFile != null ? dbFile : new File(tagTableName + ".db");
+        this.tagService = new TagService(this.dbFile);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        this.tagDB = TagDB.getInstance(this.dbFile);
-        HTreeMap<String, Tag> tagMap = tagDB.getMap();
-        if (tagMap == null) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(tagTableName + " database not initialized");
-            return;
-        }
-
         Tag tag = null;
         try {
             String json = req.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
@@ -56,37 +48,29 @@ public class TagServlet extends HttpServlet {
             resp.getWriter().write("Name required");
             return;
         }
-        if (tagMap.containsKey(tag.getName())) {
-            resp.setStatus(HttpServletResponse.SC_CONFLICT);
-            resp.getWriter().write(tagLogName + " already exists");
-            return;
+        try {
+            tagService.createTag(tag);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().write(tagLogName + " created");
+        } catch (ServiceException e) {
+            resp.setStatus(e.getStatusCode());
+            resp.getWriter().write(e.getMessage());
         }
-
-        tagMap.put(tag.getName(), tag);
-        this.tagDB.commit();
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.getWriter().write(tagLogName + " created");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        this.tagDB = TagDB.getInstance(this.dbFile);
-        HTreeMap<String, Tag> tagMap = tagDB.getMap();
-        if (tagMap == null) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(tagTableName + " database not initialized");
+        Set<String> tags;
+        try {
+            tags = tagService.getAllTags();
+        } catch (ServiceException e) {
+            resp.setStatus(e.getStatusCode());
+            resp.getWriter().write(e.getMessage());
             return;
         }
-
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-
-        // Converti il Set in array di stringhe
-        String[] tagsArray = tagMap.keySet().toArray(new String[0]);
-
-        // Usa Gson per serializzare l'array in JSON
-        String json = new Gson().toJson(tagsArray);
-
+        String json = new Gson().toJson(tags.toArray(new String[0]));
         PrintWriter out = resp.getWriter();
         out.print(json);
         out.flush();
@@ -95,8 +79,8 @@ public class TagServlet extends HttpServlet {
 
     @Override
     public void destroy() {
-        if (tagDB != null) {
-            tagDB.close();
+        if (tagService != null) {
+            tagService.close();
         }
     }
 }

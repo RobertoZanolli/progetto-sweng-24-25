@@ -17,13 +17,10 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.json.client.JSONParser;
-import com.google.gwt.json.client.JSONValue;
-import java.util.ArrayList;
+import com.google.gwt.user.client.ui.RootPanel;
 import java.util.List;
 
 public class CreateNotePanel extends Composite {
-
     private final VerticalPanel panel = new VerticalPanel();
     private final TextBox titleBox = new TextBox();
     private final TextArea contentBox = new TextArea();
@@ -193,8 +190,8 @@ public class CreateNotePanel extends Composite {
         });
 
         backButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new ViewNotesPanel());
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new ViewNotesPanel());
         });
     }
 
@@ -209,8 +206,7 @@ public class CreateNotePanel extends Composite {
 
     private void updateTagList(Boolean exists, String newTag) {
         if (!exists) {
-            // Usiamo l'indice come valore, ma si può usare anche un UUID o il testo stesso
-            tagListBox.addItem(newTag, String.valueOf(tagListBox.getItemCount() + 1));
+            tagListBox.addItem(newTag);  // use tag text as value
             newTagBox.setText("");
         } else {
             feedbackLabel.setText("Tag già presente.");
@@ -228,7 +224,7 @@ public class CreateNotePanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        List<String> tags = parseTagsJson(json);
+                        List<String> tags = JsonParserUtil.parseTagsJson(json);
 
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
@@ -249,19 +245,4 @@ public class CreateNotePanel extends Composite {
         }
     }
 
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
 }

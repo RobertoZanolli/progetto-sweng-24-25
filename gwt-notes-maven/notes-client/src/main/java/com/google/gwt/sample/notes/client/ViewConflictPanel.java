@@ -13,6 +13,7 @@ import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Note;
@@ -20,7 +21,7 @@ import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
-import java.util.ArrayList;
+import com.google.gwt.user.client.ui.RootPanel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,10 +84,6 @@ public class ViewConflictPanel extends Composite {
         originalTextContent.setText(originalNote.getCurrentVersion().getContent());
         updatedTextContent.setText(updatedVersion.get("content").isString().stringValue());
 
-        /*
-         * originalTextContent.setReadOnly(true);
-         * updatedTextContext.setReadOnly(true);
-         */
         originalTextContent.setVisibleLines(15);
         updatedTextContent.setVisibleLines(15);
 
@@ -109,10 +106,21 @@ public class ViewConflictPanel extends Composite {
         permissionListBoxOriginal.setSelectedIndex(originalNote.getPermission().ordinal());
         permissionListBoxUpdated.setSelectedIndex(originalNote.getPermission().ordinal());
 
-        // verifico se l'utente è il proprietario della nota e nel caso abilito la
-        // modifica dei permessi
+        // verifico se l'utente è il proprietario della nota e nel caso abilito la modifica dei permessi
         if (originalNote.isOwner(Session.getInstance().getUserEmail())) {
-            permissionListBoxUpdated.setSelectedIndex((int) updatedVersion.get("permission").isNumber().doubleValue());
+            JSONValue permVal = updatedVersion.get("permission");
+            if (permVal != null) {
+                JSONString permStr = permVal.isString();
+                if (permStr != null) {
+                    Permission permEnum = Permission.valueOf(permStr.stringValue());
+                    permissionListBoxUpdated.setSelectedIndex(permEnum.ordinal());
+                } else {
+                    JSONNumber permNum = permVal.isNumber();
+                    if (permNum != null) {
+                        permissionListBoxUpdated.setSelectedIndex((int) permNum.doubleValue());
+                    }
+                }
+            }
             permissionListBoxUpdated.setEnabled(true);
             permissionListBoxOriginal.setEnabled(true);
         }
@@ -181,8 +189,8 @@ public class ViewConflictPanel extends Composite {
         });
 
         backButton.addClickHandler(event -> {
-            mainPanel.clear();
-            mainPanel.add(new NoteDetailPanel(originalNote));
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new NoteDetailPanel(originalNote));
         });
     }
 
@@ -213,24 +221,9 @@ public class ViewConflictPanel extends Composite {
         }
     }
 
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
 
     private void setUpTagListBoxes(String json) {
-        List<String> tags = parseTagsJson(json);
+        List<String> tags = JsonParserUtil.parseTagsJson(json);
 
         // clear existing items
         tagListBoxOriginal.clear();
@@ -247,23 +240,8 @@ public class ViewConflictPanel extends Composite {
         // Set the original tags for the original note
         setSelectedTags(tagListBoxOriginal, originalNote.getTags());
 
-        JSONArray jsonTags = updatedVersion.get("tags").isArray();
-        String[] updatedTags;
-        if (jsonTags == null) {
-            // If no tags are present in the updated version, initialize it as an empty
-            // array
-            updatedTags = new String[0];
-        } else {
-            updatedTags = new String[jsonTags.size()];
-            for (int i = 0; i < jsonTags.size(); i++) {
-                JSONValue tagValue = jsonTags.get(i);
-                if (tagValue.isString() != null) {
-                    updatedTags[i] = tagValue.isString().stringValue();
-                } else {
-                    updatedTags[i] = null; // Handle non-string values gracefully
-                }
-            }
-        }
+        List<String> updatedTagsList = JsonParserUtil.parseTagsJson(updatedVersion.get("tags").toString());
+        String[] updatedTags = updatedTagsList.toArray(new String[0]);
 
         // Set the updated tags for the updated version
         setSelectedTags(tagListBoxUpdated, updatedTags);
@@ -361,8 +339,8 @@ public class ViewConflictPanel extends Composite {
             }
         }
         payload.put("tags", tagsArray);
-        DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-        payload.put("lastKnownUpdate", new JSONString(fmt.format(originalNote.getCurrentVersion().getUpdatedAt())));
+        payload.put("lastKnownVersion", new JSONString(String.valueOf(originalNote.currentVersionNumber())));
+
 
         String url = GWT.getHostPageBaseURL() + "api/notes?id=" + originalNote.getId();
         RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
@@ -373,8 +351,9 @@ public class ViewConflictPanel extends Composite {
                 @Override
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
-                        mainPanel.clear();
-                        mainPanel.add(new ViewNotesPanel());
+                        feedbackLabel.setText("Nota modificata!");
+                        RootPanel.get("mainPanel").clear();
+                        RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else if (response.getStatusCode() == Response.SC_CONFLICT) {
                         feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
 
@@ -425,8 +404,8 @@ public class ViewConflictPanel extends Composite {
             }
         }
         payload.put("tags", tagsArray);
-        DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-        payload.put("lastKnownUpdate", new JSONString(fmt.format(originalNote.getCurrentVersion().getUpdatedAt())));
+        payload.put("lastKnownVersion", new JSONString(String.valueOf(originalNote.currentVersionNumber())));
+
 
         String url = GWT.getHostPageBaseURL() + "api/notes?id=" + originalNote.getId();
         RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
@@ -437,8 +416,9 @@ public class ViewConflictPanel extends Composite {
                 @Override
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
-                        mainPanel.clear();
-                        mainPanel.add(new ViewNotesPanel());
+                        feedbackLabel.setText("Nota modificata!");
+                        RootPanel.get("mainPanel").clear();
+                        RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else if (response.getStatusCode() == Response.SC_CONFLICT) {
                         feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
 
@@ -482,8 +462,8 @@ public class ViewConflictPanel extends Composite {
                         if (note == null) {
                             feedbackLabel.setText("Nota non trovata o malformata.");
                         } else {
-                            mainPanel.clear();
-                            mainPanel.add(new ViewConflictPanel(note, payload));
+                            RootPanel.get("mainPanel").clear();
+                            RootPanel.get("mainPanel").add(new ViewConflictPanel(note, payload));
                         }
                     } else {
                         feedbackLabel.setText("Errore nel recupero della nota: " + response.getStatusText());
