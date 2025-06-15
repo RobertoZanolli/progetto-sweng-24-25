@@ -22,6 +22,10 @@ import java.util.Date;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
+/**
+ * Test per NoteServlet.
+ * Verifica le operazioni CRUD sulle note e i permessi.
+ */
 public class NoteServletTest {
     private NoteServlet servlet;
     private File tempDbFileNote;
@@ -187,7 +191,7 @@ public class NoteServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains(noteLogName + " created"));
+        assertTrue(resp.getOutput().contains("Nota creata con successo"));
     }
 
     @Test
@@ -208,7 +212,7 @@ public class NoteServletTest {
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains(noteLogName + " already exists"));
+        assertTrue(resp2.getOutput().contains("Nota già esistente"));
     }
 
     @Test
@@ -225,7 +229,7 @@ public class NoteServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Title required"));
+        assertTrue(resp.getOutput().contains("Titolo richiesto"));
     }
 
     @Test
@@ -242,7 +246,7 @@ public class NoteServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains(tagLogName + " name required"));
+        assertTrue(resp.getOutput().contains("Nome del tag richiesto"));
     }
 
     @Test
@@ -259,17 +263,17 @@ public class NoteServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Tag notExistTag does not exist"));
+        assertTrue(resp.getOutput().contains("Il tag notExistTag non esiste"));
     }
 
     @Test
     public void testCreateNoteWithInvalidJson() throws Exception {
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
         StubHttpServletResponse resp = new StubHttpServletResponse();
-        when(req.getReader()).thenThrow(new IOException("Simulated IO error"));
+        when(req.getReader()).thenThrow(new IOException("Errore IO simulato"));
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid " + noteLogName + " data"));
+        assertTrue(resp.getOutput().contains("Dati della nota non validi"));
     }
 
     @Test
@@ -314,7 +318,7 @@ public class NoteServletTest {
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_OK, deleteResp.getStatus());
-        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID " + note.getId() + " deleted"));
+        assertTrue(deleteResp.getOutput().contains("Nota con ID " + note.getId() + " eliminata con successo"));
     }
 
     @Test
@@ -325,7 +329,7 @@ public class NoteServletTest {
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, deleteResp.getStatus());
-        assertTrue(deleteResp.getOutput().contains(noteLogName + " with ID nonexistentId not found"));
+        assertTrue(deleteResp.getOutput().contains("Nota con ID nonexistentId non trovata"));
     }
 
     @Test
@@ -336,7 +340,7 @@ public class NoteServletTest {
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, deleteResp.getStatus());
-        assertTrue(deleteResp.getOutput().contains("Note ID required"));
+        assertTrue(deleteResp.getOutput().contains("ID della nota richiesto"));
     }
 
     @Test
@@ -397,7 +401,7 @@ public class NoteServletTest {
         servlet.doPut(putReq, putResp);
 
         assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
-        assertTrue(putResp.getOutput().contains("Note updated with new version"));
+        assertTrue(putResp.getOutput().contains("Nota aggiornata con nuova versione"));
     }
 
     @Test
@@ -421,7 +425,7 @@ public class NoteServletTest {
         servlet.doPut(putReq, putResp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, putResp.getStatus());
-        assertTrue(putResp.getOutput().contains("Title required"));
+        assertTrue(putResp.getOutput().contains("Titolo richiesto"));
     }
 
     @Test
@@ -443,7 +447,7 @@ public class NoteServletTest {
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, putResp.getStatus());
-        assertTrue(putResp.getOutput().contains("Tag notExistTag does not exist"));
+        assertTrue(putResp.getOutput().contains("Il tag notExistTag non esiste"));
     }
 
     @Test
@@ -454,7 +458,7 @@ public class NoteServletTest {
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, putResp.getStatus());
-        assertTrue(putResp.getOutput().contains("Note not found."));
+        assertTrue(putResp.getOutput().contains("Nota non trovata"));
     }
 
     @Test
@@ -706,6 +710,6 @@ public class NoteServletTest {
         servlet.doPut(putReq, putResp);
 
         assertEquals(HttpServletResponse.SC_CONFLICT, putResp.getStatus());
-        assertTrue(putResp.getOutput().contains("Note modified by another user"));
+        assertTrue(putResp.getOutput().contains("Nota modificata da un altro utente. Ricarica la pagina."));
     }
 }

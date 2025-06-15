@@ -10,12 +10,15 @@ import com.google.gwt.sample.notes.shared.Version;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servizio principale per la gestione delle note.
+ * Gestisce operazioni CRUD e controlli di autorizzazione.
+ */
 public class NoteService {
 
     private final NoteDB noteDB;
     private final TagDB tagDB;
-    private final String noteLogName = "Note";
-    private final String tagLogName = "Tag";
+
 
     public NoteService(NoteDB noteDB, TagDB tagDB) {
         this.noteDB = noteDB;
@@ -23,25 +26,25 @@ public class NoteService {
     }
 
     /**
-     * Creates a new note.
-     * @param noteJson The JSON string representation of the note.
-     * @param userEmail The email of the user creating the note.
-     * @throws ServiceException If an error occurs during note creation.
+     * Crea una nuova nota.
+     * @param noteJson JSON della nota da creare
+     * @param userEmail 
+     * @throws ServiceException 
      */
     public void createNote(String noteJson, String userEmail) throws ServiceException {
         if (noteDB.getMap() == null || tagDB.getMap() == null) {
-            throw new ServiceException("Database not initialized.", 500);
+            throw new ServiceException("Database non inizializzato", 500);
         }
 
         Note note;
         try {
             note = NoteFactory.fromJson(noteJson);
         } catch (Exception e) {
-            throw new ServiceException("Invalid " + noteLogName + " data: " + e.getMessage(), 400);
+            throw new ServiceException("Dati della nota non validi: " + e.getMessage(), 400);
         }
 
         if (note == null) {
-            throw new ServiceException("Invalid note data", 400);
+            throw new ServiceException("Dati della nota non validi", 400);
         }
 
         if (userEmail == null || userEmail.isEmpty()) {
@@ -51,34 +54,34 @@ public class NoteService {
         if (note.getOwnerEmail() == null || note.getOwnerEmail().isEmpty()) {
             note.setOwnerEmail(userEmail);
         } else if (!note.getOwnerEmail().equals(userEmail)) {
-            throw new ServiceException("Owner email cannot be different from session email", 400);
+            throw new ServiceException("L'email del proprietario non può essere diversa dall'email della sessione", 400);
         }
 
         if (note.getId() == null || note.getId().isEmpty()) {
-            throw new ServiceException("Note ID required", 400);
+            throw new ServiceException("ID della nota richiesto", 400);
         }
 
         if (noteDB.getMap().containsKey(note.getId())) {
-            throw new ServiceException(noteLogName + " already exists", 409);
+            throw new ServiceException("Nota già esistente", 409);
         }
 
         if (note.getAllVersions() == null || note.getAllVersions().isEmpty()) {
-            throw new ServiceException("At least one version required", 400);
+            throw new ServiceException("È richiesta almeno una versione", 400);
         }
 
         if (note.getCurrentVersion() == null || note.getCurrentVersion().getTitle() == null
                 || note.getCurrentVersion().getTitle().isEmpty()) {
-            throw new ServiceException("Title required", 400);
+            throw new ServiceException("Titolo richiesto", 400);
         }
 
-        // Verify tags exist
+        // Verifica l'esistenza dei tag
         if (note.getTags() != null) {
             for (String tag : note.getTags()) {
                 if (tag == null || tag.isEmpty()) {
-                    throw new ServiceException(tagLogName + " name required", 400);
+                    throw new ServiceException("Nome del tag richiesto", 400);
                 }
                 if (!tagDB.getMap().containsKey(tag)) {
-                    throw new ServiceException("Tag " + tag + " does not exist", 400);
+                    throw new ServiceException("Il tag " + tag + " non esiste", 400);
                 }
             }
         }
@@ -88,11 +91,11 @@ public class NoteService {
     }
 
     /**
-     * Retrieves a specific note by its ID, checking user permissions.
-     * @param noteId The ID of the note to retrieve.
-     * @param userEmail The email of the user requesting the note.
-     * @return The Note object.
-     * @throws ServiceException If the note is not found, or the user is unauthorized/forbidden.
+     * Recupera una nota specifica controllando i permessi dell'utente.
+     * @param noteId 
+     * @param userEmail 
+     * @return La nota richiesta
+     * @throws ServiceException 
      */
     public Note getNoteById(String noteId, String userEmail) throws ServiceException {
         if (userEmail == null || userEmail.isEmpty()) {
@@ -100,29 +103,29 @@ public class NoteService {
         }
 
         if (noteId == null || noteId.isEmpty()) {
-            throw new ServiceException("Note ID required", 400);
+            throw new ServiceException("ID della nota richiesto", 400);
         }
 
         if (noteDB.getMap() == null) {
-            throw new ServiceException("Notes database not initialized.", 500);
+            throw new ServiceException("Database delle note non inizializzato", 500);
         }
 
         Note note = noteDB.getMap().get(noteId);
         if (note == null) {
-            throw new ServiceException("Note with ID " + noteId + " not found", 404);
+            throw new ServiceException("Nota con ID " + noteId + " non trovata", 404);
         }
 
         if (!note.getPermission().canView(userEmail, note)) {
-            throw new ServiceException("User " + userEmail + " does not have permission to view note " + noteId, 403);
+            throw new ServiceException("L'utente " + userEmail + " non ha il permesso di visualizzare la nota " + noteId, 403);
         }
         return note;
     }
 
     /**
-     * Retrieves all notes visible to a specific user.
-     * @param userEmail The email of the user requesting the notes.
-     * @return A list of visible Note objects.
-     * @throws ServiceException If the user is not authenticated or the database is not initialized.
+     * Recupera tutte le note visibili per un utente.
+     * @param userEmail 
+     * @return Lista delle note visibili
+     * @throws ServiceException
      */
     public List<Note> getAllVisibleNotes(String userEmail) throws ServiceException {
         if (userEmail == null || userEmail.isEmpty()) {
@@ -130,7 +133,7 @@ public class NoteService {
         }
 
         if (noteDB.getMap() == null) {
-            throw new ServiceException("Notes database not initialized.", 500);
+            throw new ServiceException("Database delle note non inizializzato", 500);
         }
 
         List<Note> visibleNotes = new ArrayList<>();
@@ -143,29 +146,27 @@ public class NoteService {
     }
 
     /**
-     * Deletes a note by its ID, checking user permissions.
-     * @param noteId The ID of the note to delete.
-     * @param userEmail The email of the user requesting the deletion.
-     * @throws ServiceException If the note is not found, or the user is unauthorized/forbidden.
+     * Elimina una nota controllando i permessi dell'utente.
+     * @param noteId 
+     * @param userEmail 
+     * @throws ServiceException 
      */
     public void deleteNote(String noteId, String userEmail) throws ServiceException {
-        // Removed authentication block as per instructions
-
         if (noteDB.getMap() == null) {
-            throw new ServiceException("Notes database not initialized.", 500);
+            throw new ServiceException("Database delle note non inizializzato", 500);
         }
 
         if (noteId == null || noteId.isEmpty()) {
-            throw new ServiceException("Note ID required", 400);
+            throw new ServiceException("ID della nota richiesto", 400);
         }
 
         if (!noteDB.getMap().containsKey(noteId)) {
-            throw new ServiceException(noteLogName + " with ID " + noteId + " not found", 404);
+            throw new ServiceException("Nota con ID " + noteId + " non trovata", 404);
         }
 
         Note noteToDelete = noteDB.getMap().get(noteId);
         if (!noteToDelete.getOwnerEmail().equals(userEmail) && !noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
-            throw new ServiceException("User " + userEmail + " does not have permission to delete note " + noteId, 403);
+            throw new ServiceException("L'utente " + userEmail + " non ha il permesso di eliminare la nota " + noteId, 403);
         }
 
         noteDB.getMap().remove(noteId);
@@ -173,32 +174,29 @@ public class NoteService {
     }
 
     /**
-     * Updates an existing note by adding a new version, tags, or changing permissions.
-     * @param noteId The ID of the note to update.
-     * @param updateJson The JSON string containing the new version data, tags, and/or permission.
-     * @param userEmail The email of the user updating the note.
-     * @throws ServiceException If an error occurs during the update process.
+     * Aggiorna una nota esistente aggiungendo una nuova versione.
+     * @param noteId 
+     * @param updateJson JSON con i dati di aggiornamento
+     * @param userEmail 
+     * @throws ServiceException
      */
     @SuppressWarnings("deprecation")
     public void updateNote(String noteId, String updateJson, String userEmail) throws ServiceException {
-        // Removed authentication block as per instructions
-
         if (noteDB.getMap() == null || tagDB.getMap() == null) {
-            throw new ServiceException("Database not initialized.", 500);
+            throw new ServiceException("Database non inizializzato", 500);
         }
 
         if (noteId == null || noteId.isEmpty()) {
-            throw new ServiceException("Missing or invalid note ID", 400);
+            throw new ServiceException("ID della nota mancante o non valido", 400);
         }
 
         if (!noteDB.getMap().containsKey(noteId)) {
-            throw new ServiceException("Note not found.", 404);
+            throw new ServiceException("Nota non trovata", 404);
         }
 
-        // Permission check before update
         Note noteToUpdate = noteDB.getMap().get(noteId);
         if (!noteToUpdate.getPermission().canEdit(userEmail, noteToUpdate)) {
-            throw new ServiceException("User " + userEmail + " does not have permission to update note " + noteId, 403);
+            throw new ServiceException("L'utente " + userEmail + " non ha il permesso di aggiornare la nota " + noteId, 403);
         }
 
         Version newVersion;
@@ -213,7 +211,7 @@ public class NoteService {
                 try {
                     lastKnownVersion = Integer.parseInt(jsonObj.get("lastKnownVersion").getAsString());
                 } catch (NumberFormatException e) {
-                    throw new ServiceException("Invalid version number", 400);
+                    throw new ServiceException("Numero di versione non valido", 400);
                 }
             }
 
@@ -222,9 +220,8 @@ public class NoteService {
             System.out.println(" - Versione nota dal client (lastKnownVersion): " + lastKnownVersion);
             System.out.println(" - Versione attuale nel DB (currentVersionNumber): " + currentVersionInDB);
 
-
             if (lastKnownVersion != -1 && lastKnownVersion != currentVersionInDB) {
-                throw new ServiceException("Note modified by another user. Please reload.", 409);
+                throw new ServiceException("Nota modificata da un altro utente. Ricarica la pagina.", 409);
             }
 
             if (jsonObj.has("tags") && jsonObj.get("tags").isJsonArray()) {
@@ -240,30 +237,28 @@ public class NoteService {
                 try {
                     newPermission = Permission.valueOf(permString.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    throw new ServiceException("Invalid permission value: " + permString, 400);
+                    throw new ServiceException("Valore del permesso non valido: " + permString, 400);
                 }
             }
 
-            // NoteFactory.fromJson will attempt to parse the entire object as a Version
-            // This assumes the JSON for update contains version details, otherwise it might need adjustments
             newVersion = VersionFactory.fromJson(updateJson);
-        } catch (ServiceException e) { // Re-throw ServiceExceptions caught in try block
+        } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
-            throw new ServiceException("Invalid update data: " + e.getMessage(), 400);
+            throw new ServiceException("Dati di aggiornamento non validi: " + e.getMessage(), 400);
         }
 
         if (newVersion == null || newVersion.getTitle() == null || newVersion.getTitle().isEmpty()) {
-            throw new ServiceException("Title required for new version", 400);
+            throw new ServiceException("Titolo richiesto per la nuova versione", 400);
         }
 
         if (newTags != null) {
             for (String tag : newTags) {
                 if (tag == null || tag.isEmpty()) {
-                    throw new ServiceException(tagLogName + " name required", 400);
+                    throw new ServiceException("Nome del tag richiesto", 400);
                 }
                 if (!tagDB.getMap().containsKey(tag)) {
-                    throw new ServiceException("Tag " + tag + " does not exist", 400);
+                    throw new ServiceException("Il tag " + tag + " non esiste", 400);
                 }
             }
             noteToUpdate.setTags(newTags);
