@@ -10,20 +10,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mapdb.HTreeMap;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
 
 import java.io.*;
-import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
@@ -53,7 +47,6 @@ public class NoteServletTest {
         assertNotNull(noteDB);
         assertNotNull(noteDB.getMap());
         assertNotNull(tagDB.getMap());
-        // Add a tag for testing
         tagDB.getMap().put("testTag", new ConcreteTag("testTag"));
         tagDB.commit();
     }
@@ -83,7 +76,7 @@ public class NoteServletTest {
             this.method = "POST";
             this.idParam = null;
             this.permissionParam = null;
-            this.session = new StubHttpSession();
+            this.session = mock(HttpSession.class);
         }
 
         public StubHttpServletRequest(String body, String method, String idParam, String permissionParam) {
@@ -92,7 +85,7 @@ public class NoteServletTest {
             this.method = method;
             this.idParam = idParam;
             this.permissionParam = permissionParam;
-            this.session = new StubHttpSession();
+            this.session = mock(HttpSession.class);
         }
 
         public StubHttpServletRequest(String body, String method, String idParam, String permissionParam, HttpSession session) {
@@ -136,98 +129,13 @@ public class NoteServletTest {
         }
     }
 
-    private static class StubHttpSession implements HttpSession {
-        private final Map<String, Object> attributes = new HashMap<>();
-
-        @Override
-        public Object getAttribute(String name) {
-            return attributes.get(name);
-        }
-
-        @Override
-        public void setAttribute(String name, Object value) {
-            attributes.put(name, value);
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames() {
-            return Collections.enumeration(attributes.keySet());
-        }
-
-        // Metodi stub inutilizzati
-        @Override
-        public long getCreationTime() {
-            return 0;
-        }
-
-        @Override
-        public String getId() {
-            return "mock-session";
-        }
-
-        @Override
-        public long getLastAccessedTime() {
-            return 0;
-        }
-
-        @Override
-        public ServletContext getServletContext() {
-            return null;
-        }
-
-        @Override
-        public void setMaxInactiveInterval(int interval) {
-        }
-
-        @Override
-        public int getMaxInactiveInterval() {
-            return 0;
-        }
-
-        @Override
-        public HttpSessionContext getSessionContext() {
-            return null;
-        }
-
-        @Override
-        public Object getValue(String name) {
-            return null;
-        }
-
-        @Override
-        public String[] getValueNames() {
-            return new String[0];
-        }
-
-        @Override
-        public void putValue(String name, Object value) {
-        }
-
-        @Override
-        public void removeValue(String name) {
-        }
-
-        @Override
-        public void invalidate() {
-        }
-
-        @Override
-        public boolean isNew() {
-            return false;
-        }
-
-        @Override
-        public void removeAttribute(String name) {
-        }
-    }
-
     private static class StubHttpServletResponse extends HttpServletResponseWrapper {
         private final StringWriter sw = new StringWriter();
         private final PrintWriter pw = new PrintWriter(sw);
         private int status = 0;
 
         public StubHttpServletResponse() {
-            super(mock(javax.servlet.http.HttpServletResponse.class));
+            super(mock(HttpServletResponse.class));
         }
 
         @Override
@@ -271,11 +179,11 @@ public class NoteServletTest {
         Note note = createValidNote("testTag2");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
@@ -287,18 +195,16 @@ public class NoteServletTest {
         Note note = createValidNote("dupId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest req1 = new StubHttpServletRequest(json);
-        req1.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req1 = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
 
-        // Try to create the same note again
-        StubHttpServletRequest req2 = new StubHttpServletRequest(json);
-        req2.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req2 = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
@@ -311,11 +217,11 @@ public class NoteServletTest {
         note.getCurrentVersion().setTitle("");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
@@ -328,11 +234,11 @@ public class NoteServletTest {
         note.setTags(new String[] { null });
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
@@ -345,11 +251,11 @@ public class NoteServletTest {
         note.setTags(new String[] { "notExistTag" });
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest req = new StubHttpServletRequest(json);
-        req.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest req = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
@@ -371,17 +277,16 @@ public class NoteServletTest {
         Note note = createValidNote("getId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        StubHttpServletRequest getReq = new StubHttpServletRequest("");
-        getReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest getReq = new StubHttpServletRequest("", "GET", null, null, mockSession);
         StubHttpServletResponse getResp = new StubHttpServletResponse();
         servlet.doGet(getReq, getResp);
         assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
@@ -395,18 +300,16 @@ public class NoteServletTest {
         Note note = createValidNote("delId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        HttpSession sharedSession = new StubHttpSession();
-        sharedSession.setAttribute("email", ownerEmail);
-
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, sharedSession);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null, sharedSession);
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null, mockSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
@@ -416,7 +319,8 @@ public class NoteServletTest {
 
     @Test
     public void testDeleteNonExistingNote() throws Exception {
-        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", "nonexistentId", null);
+        HttpSession mockSession = mock(HttpSession.class);
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", "nonexistentId", null, mockSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
@@ -426,7 +330,8 @@ public class NoteServletTest {
 
     @Test
     public void testDeleteWithoutId() throws Exception {
-        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", null, null);
+        HttpSession mockSession = mock(HttpSession.class);
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", null, null, mockSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
 
@@ -436,36 +341,30 @@ public class NoteServletTest {
 
     @Test
     public void testCreateNoteWithNullPermission() throws Exception {
-        // Create a note without setting permission (permission should be null)
         Note note = createValidNote("nullPermId");
-        // Do not call note.setPermission(...) so JSON has no "permission" field
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // After creation, default permission should be PRIVATE: owner sees, others do
-        // not
-        // Owner GET
-        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
-        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("", "GET", null, null, mockSession);
         StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
         servlet.doGet(getReqOwner, getRespOwner);
         assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
         String outputOwner = getRespOwner.getOutput();
         assertTrue(outputOwner.contains("nullPermId"));
 
-        // Other user GET should not see
         String otherEmail = "other@example.com";
-        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
-        getReqOther.getSession().setAttribute("email", otherEmail);
+        HttpSession otherMockSession = mock(HttpSession.class);
+        when(otherMockSession.getAttribute("email")).thenReturn(otherEmail);
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("", "GET", null, null, otherMockSession);
         StubHttpServletResponse getRespOther = new StubHttpServletResponse();
         servlet.doGet(getReqOther, getRespOther);
         assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
@@ -478,11 +377,11 @@ public class NoteServletTest {
         Note note = createValidNote("putId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
@@ -493,8 +392,7 @@ public class NoteServletTest {
         newVersion.setContent("Updated Content");
         newVersion.setUpdatedAt(new Date());
         String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
-        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, mockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
 
@@ -507,19 +405,18 @@ public class NoteServletTest {
         Note note = createValidNote("putMissingTitleId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
         String putJson = "{\"title\":\"\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
-        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, mockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
 
@@ -532,18 +429,17 @@ public class NoteServletTest {
         Note note = createValidNote("putBadTagId");
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
         String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"notExistTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
-        putReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, mockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, putResp.getStatus());
@@ -552,8 +448,9 @@ public class NoteServletTest {
 
     @Test
     public void testUpdateNonExistingNote() throws Exception {
+        HttpSession mockSession = mock(HttpSession.class);
         String putJson = "{\"title\":\"Updated Title\",\"content\":\"Updated Content\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", "nonexistentId", null);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", "nonexistentId", null, mockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, putResp.getStatus());
@@ -562,24 +459,23 @@ public class NoteServletTest {
 
     @Test
     public void testPermissionWithOutOwner() throws Exception {
-        // Owner can view, others cannot
         Note note = createValidNote("privateId");
         note.setPermission(Permission.PRIVATE);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        // Il proprietario crea la nota
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Owner GET
-        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
+        HttpSession emptySession = mock(HttpSession.class);
+        when(emptySession.getAttribute("email")).thenReturn(null);
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("", "GET", null, null, emptySession);
         StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
         servlet.doGet(getReqOwner, getRespOwner);
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, getRespOwner.getStatus());
@@ -589,35 +485,31 @@ public class NoteServletTest {
 
     @Test
     public void testPermissionPrivate() throws Exception {
-        // Owner can view, others cannot
         Note note = createValidNote("privateId");
         note.setPermission(Permission.PRIVATE);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        // Il proprietario crea la nota
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Owner GET
-        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
-        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("", "GET", null, null, mockSession);
         StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
         servlet.doGet(getReqOwner, getRespOwner);
         assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
         String outputOwner = getRespOwner.getOutput();
         assertTrue(outputOwner.contains("privateId"));
 
-        // Other user GET
         String otherEmail = "other@example.com";
-        StubHttpServletRequest getReqOther = new StubHttpServletRequest("");
-        getReqOther.getSession().setAttribute("email", otherEmail);
+        HttpSession otherMockSession = mock(HttpSession.class);
+        when(otherMockSession.getAttribute("email")).thenReturn(otherEmail);
+        StubHttpServletRequest getReqOther = new StubHttpServletRequest("", "GET", null, null, otherMockSession);
         StubHttpServletResponse getRespOther = new StubHttpServletResponse();
         servlet.doGet(getReqOther, getRespOther);
         assertEquals(HttpServletResponse.SC_OK, getRespOther.getStatus());
@@ -627,40 +519,37 @@ public class NoteServletTest {
 
     @Test
     public void testPermissionRead() throws Exception {
-        // Owner creates note with READ permission
         Note note = createValidNote("readId");
         note.setPermission(Permission.READ);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Other user GET should see
         String otherEmail = "other@example.com";
-        StubHttpServletRequest getReq = new StubHttpServletRequest("");
-        getReq.getSession().setAttribute("email", otherEmail);
+        HttpSession otherMockSession = mock(HttpSession.class);
+        when(otherMockSession.getAttribute("email")).thenReturn(otherEmail);
+        StubHttpServletRequest getReq = new StubHttpServletRequest("", "GET", null, null, otherMockSession);
         StubHttpServletResponse getResp = new StubHttpServletResponse();
         servlet.doGet(getReq, getResp);
         assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
         String output = getResp.getOutput();
         assertTrue(output.contains("readId"));
 
-        // Other user PUT should be forbidden
         String putJson = "{\"title\":\"New\",\"content\":\"New\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, otherMockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
 
-        // Other user DELETE should be forbidden
-        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null, otherMockSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
         assertEquals(HttpServletResponse.SC_FORBIDDEN, deleteResp.getStatus());
@@ -668,40 +557,37 @@ public class NoteServletTest {
 
     @Test
     public void testPermissionWrite() throws Exception {
-        // Owner creates note with WRITE permission
         Note note = createValidNote("writeId");
         note.setPermission(Permission.WRITE);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
 
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Other user GET should see
         String otherEmail = "other@example.com";
-        StubHttpServletRequest getReq = new StubHttpServletRequest("");
-        getReq.getSession().setAttribute("email", otherEmail);
+        HttpSession otherMockSession = mock(HttpSession.class);
+        when(otherMockSession.getAttribute("email")).thenReturn(otherEmail);
+        StubHttpServletRequest getReq = new StubHttpServletRequest("", "GET", null, null, otherMockSession);
         StubHttpServletResponse getResp = new StubHttpServletResponse();
         servlet.doGet(getReq, getResp);
         assertEquals(HttpServletResponse.SC_OK, getResp.getStatus());
         String output = getResp.getOutput();
         assertTrue(output.contains("writeId"));
 
-        // Other user PUT should succeed
         String putJson = "{\"title\":\"UpdatedTitle\",\"content\":\"UpdatedContent\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"]}";
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, otherMockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_OK, putResp.getStatus());
 
-        // Other user DELETE should succeed
-        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null);
+        StubHttpServletRequest deleteReq = new StubHttpServletRequest("", "DELETE", note.getId(), null, otherMockSession);
         StubHttpServletResponse deleteResp = new StubHttpServletResponse();
         servlet.doDelete(deleteReq, deleteResp);
         assertEquals(HttpServletResponse.SC_OK, deleteResp.getStatus());
@@ -720,19 +606,19 @@ public class NoteServletTest {
         noteMap.put(note.getId(), note);
         noteDB.commit();
 
-        // Verifico che il proprietario veda correttamente la nota
+        HttpSession ownerMockSession = mock(HttpSession.class);
+        when(ownerMockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("");
-        getReqOwner.getSession().setAttribute("email", ownerEmail);
+        StubHttpServletRequest getReqOwner = new StubHttpServletRequest("", "GET", null, null, ownerMockSession);
         StubHttpServletResponse getRespOwner = new StubHttpServletResponse();
         servlet.doGet(getReqOwner, getRespOwner);
         assertEquals(HttpServletResponse.SC_OK, getRespOwner.getStatus());
         String outputOwner = getRespOwner.getOutput();
         assertTrue(outputOwner.contains("alreadyHiddenId"));
 
-        // Controllo che l'utente nascosto NON la veda
-        StubHttpServletRequest getReqHidden = new StubHttpServletRequest("");
-        getReqHidden.getSession().setAttribute("email", hiddenUser);
+        HttpSession hiddenMockSession = mock(HttpSession.class);
+        when(hiddenMockSession.getAttribute("email")).thenReturn(hiddenUser);
+        StubHttpServletRequest getReqHidden = new StubHttpServletRequest("", "GET", null, null, hiddenMockSession);
         StubHttpServletResponse getRespHidden = new StubHttpServletResponse();
         servlet.doGet(getReqHidden, getRespHidden);
         assertEquals(HttpServletResponse.SC_OK, getRespHidden.getStatus());
@@ -742,32 +628,26 @@ public class NoteServletTest {
 
     @Test
     public void testOwnerChangePermission() throws Exception {
-        // Il proprietario crea una nota con permesso PRIVATE
         Note note = createValidNote("permId");
         note.setPermission(Permission.PRIVATE);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        // Il proprietario crea la nota
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
-
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Il proprietario modifica il permesso in READ
         String putJson = "{\"permission\":\"READ\",\"title\":\""
                 + note.getCurrentVersion().getTitle()
                 + "\",\"content\":\""
                 + note.getCurrentVersion().getContent()
                 + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}";
 
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
-        putReq.getSession().setAttribute("email", ownerEmail);
-
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, mockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
 
@@ -780,32 +660,25 @@ public class NoteServletTest {
         note.setPermission(Permission.READ);
         String json = NoteFactory.toJson(note);
 
-        // Simula la sessione utente
         String ownerEmail = note.getOwnerEmail();
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        // Il proprietario crea la nota
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json);
-        postReq.getSession().setAttribute("email", ownerEmail);
-
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
-        /*
-         * session.setUserEmail(note.getOwnerEmail());
-         */
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
-        // Un utente non proprietario tenta di cambiare il permesso in PRIVATE
         String nonOwner = "nonOwner@example.com";
-        /*
-         * session.setUserEmail(nonOwner);
-         */ String putJson = "{\"permission\":\"PRIVATE\",\"title\":\""
+        HttpSession nonOwnerMockSession = mock(HttpSession.class);
+        when(nonOwnerMockSession.getAttribute("email")).thenReturn(nonOwner);
+        String putJson = "{\"permission\":\"PRIVATE\",\"title\":\""
                 + note.getCurrentVersion().getTitle()
                 + "\",\"content\":\""
                 + note.getCurrentVersion().getContent()
-                + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}"
-                + "\",\"email\":\"" + nonOwner + "\"}";
+                + "\",\"updatedAt\":\"2025-06-05T10:00:00Z\"}";
 
-        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null);
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJson, "PUT", note.getId(), null, nonOwnerMockSession);
         StubHttpServletResponse putResp = new StubHttpServletResponse();
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());

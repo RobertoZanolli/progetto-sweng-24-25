@@ -57,7 +57,6 @@ public class NoteDetailPanel extends Composite {
     private final Button hideButton = new Button("Non visualizzare più");
     private final ListBox permissionListBox = new ListBox();
     private boolean isEditMode = false;
-    private final DateTimeFormat dateFormat = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
     private String email = Session.getInstance().getUserEmail();
 
     public NoteDetailPanel(Note note) {
@@ -441,11 +440,12 @@ public class NoteDetailPanel extends Composite {
                 for (int i = 0; i < note.getAllVersions().size(); i++) {
                     Version v = note.getAllVersions().get(i);
                     JSONObject vObj = new JSONObject();
+                    
                     vObj.put("title", new JSONString(
                             (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
                     vObj.put("content", new JSONString(v.getContent()));
                     if (v.getUpdatedAt() != null) {
-                        vObj.put("updatedAt", new JSONString(dateFormat.format(v.getUpdatedAt())));
+                        vObj.put("updatedAt", new JSONString(DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").format(v.getUpdatedAt())));
                     }
                     versionsArray.set(i, vObj);
                 }
@@ -456,7 +456,7 @@ public class NoteDetailPanel extends Composite {
                     tagsArray.set(i, new JSONString(noteTags[i]));
                 }
                 payload.put("tags", tagsArray);
-                payload.put("ownerEmail", new JSONString(note.getOwnerEmail()));
+                payload.put("ownerEmail", new JSONString(Session.getInstance().getUserEmail()));
                 String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
                 payload.put("permission", new JSONString(selectedPermission));
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,

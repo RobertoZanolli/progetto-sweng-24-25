@@ -76,7 +76,7 @@ public class ViewNotesPanel extends Composite {
         // Sezione di ricerca per tag
         HorizontalPanel tagPanel = new HorizontalPanel();
         tagPanel.setSpacing(10);
-        tagPanel.add(new Label("Cerca per tag (usa 'Ctrl + Click' per selezione multipla): "));
+        tagPanel.add(new Label("Cerca per tag (usa 'ctrl/cmd+ Click' per selezione multipla o per rimuovere selezione): "));
         getTags();
         tagPanel.add(tagListBox);
         bodyPanle.add(tagPanel);
