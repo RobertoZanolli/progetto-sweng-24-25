@@ -17,10 +17,7 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.json.client.JSONParser;
-import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.ui.RootPanel;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CreateNotePanel extends Composite {
@@ -227,7 +224,7 @@ public class CreateNotePanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        List<String> tags = parseTagsJson(json);
+                        List<String> tags = JsonParserUtil.parseTagsJson(json);
 
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
@@ -248,19 +245,4 @@ public class CreateNotePanel extends Composite {
         }
     }
 
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
 }
