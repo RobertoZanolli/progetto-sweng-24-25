@@ -1,4 +1,8 @@
 package com.google.gwt.sample.notes.client;
+
+/**
+ * Gestisce la sessione dell'utente corrente
+ */
 public class Session {
     private static Session instance;
     private String userEmail;

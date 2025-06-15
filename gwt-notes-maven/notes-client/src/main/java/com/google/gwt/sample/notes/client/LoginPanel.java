@@ -6,7 +6,11 @@ import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
 
-public class LoginPanel extends VerticalPanel {
+/**
+ * Pannello per il login degli utenti
+ */
+public class LoginPanel extends Composite {
+    private final VerticalPanel panel = new VerticalPanel();
     private final TextBox emailBox = new TextBox();
     private final PasswordTextBox passwordBox = new PasswordTextBox();
     private final Label feedbackLabel = new Label();
@@ -14,20 +18,21 @@ public class LoginPanel extends VerticalPanel {
     private final Button backButton = new Button("Indietro");
 
     public LoginPanel() {
+        initWidget(panel);
         buildUI();
         setupHandlers();
     }
 
     private void buildUI() {
-        setSpacing(10);
-        add(new Label("Accesso"));
-        add(new Label("Email:"));
-        add(emailBox);
-        add(new Label("Password:"));
-        add(passwordBox);
-        add(loginButton);
-        add(feedbackLabel);
-        add(backButton);
+        panel.setSpacing(10);
+        panel.add(new Label("Accesso"));
+        panel.add(new Label("Email:"));
+        panel.add(emailBox);
+        panel.add(new Label("Password:"));
+        panel.add(passwordBox);
+        panel.add(loginButton);
+        panel.add(feedbackLabel);
+        panel.add(backButton);
     }
 
     private void setupHandlers() {
@@ -65,12 +70,12 @@ public class LoginPanel extends VerticalPanel {
                 public void onResponseReceived(Request request, Response response) {
                     loginButton.setEnabled(true);
                     if (response.getStatusCode() == Response.SC_OK) {
-                        feedbackLabel.setText("Login successful!");
-                        Session.getInstance().setUserEmail(email); // salva la mail
+                        feedbackLabel.setText("Accesso effettuato!");
+                        Session.getInstance().setUserEmail(email);
                         RootPanel.get("mainPanel").clear();
                         RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {
-                        feedbackLabel.setText("Login fallito: utente non registrato");
+                        feedbackLabel.setText("Accesso fallito: utente non registrato");
                     }
                 }
 

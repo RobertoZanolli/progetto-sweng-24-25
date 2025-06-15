@@ -10,9 +10,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
-import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.ConcreteVersion;
 
 import java.util.ArrayList;
@@ -25,11 +23,9 @@ import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.http.client.RequestException;
-import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONParser;
-import com.google.gwt.json.client.JSONString;
-import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -57,7 +53,6 @@ public class NoteDetailPanel extends Composite {
     private final Button hideButton = new Button("Non visualizzare più");
     private final ListBox permissionListBox = new ListBox();
     private boolean isEditMode = false;
-    private final DateTimeFormat dateFormat = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
     private String email = Session.getInstance().getUserEmail();
 
     public NoteDetailPanel(Note note) {
@@ -123,6 +118,98 @@ public class NoteDetailPanel extends Composite {
                 : "Data non disponibile"));
         panel.add(lastModifiedDateLabel);
 
+        panel.add(createButtonPanel());
+        panel.add(feedbackLabel);
+    }
+
+    private void setupHandlers() {
+        setupNavigationHandlers();
+        setupTagHandlers();
+        setupNoteActionHandlers();
+    }
+
+    private void getTags() {
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
+                GWT.getHostPageBaseURL() + "api/tags");
+        builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
+        try {
+            builder.setCallback(new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        List<String> tags = JsonParserUtil.parseTagsJson(json);
+                        for (String tag : tags) {
+                            tagListBox.addItem(tag);
+                        }
+                    } else {
+                        feedbackLabel.setText("Errore nel caricamento di " + tagLogName + ": " + response.getText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Errore: " + exception.getMessage());
+                }
+            });
+            builder.send();
+        } catch (RequestException e) {
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+        }
+    }
+
+
+    private void updateTagList(Boolean exists, String newTag) {
+        if (!exists) {
+            tagListBox.addItem(newTag, newTag);
+            newTagBox.setText("");
+        } else {
+            feedbackLabel.setText("Tag già presente");
+        }
+    }
+
+    public void getNoteById(String noteId, JSONObject payload) {
+        if (noteId == null || noteId.trim().isEmpty()) {
+            feedbackLabel.setText("ID nota non valido.");
+            return;
+        }
+
+        String url = GWT.getHostPageBaseURL() + "api/notes?id=" + URL.encodeQueryString(noteId);
+        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, url);
+        builder.setHeader("Content-Type", "application/json");
+        builder.setIncludeCredentials(true);
+
+        try {
+            builder.sendRequest(null, new RequestCallback() {
+                @Override
+                public void onResponseReceived(Request request, Response response) {
+                    if (response.getStatusCode() == Response.SC_OK) {
+                        String json = response.getText();
+                        Note note = JsonParserUtil.parseSingleNoteJson(json);
+                        if (note == null) {
+                            feedbackLabel.setText("Nota non trovata o malformata.");
+                        } else {
+                            panel.clear();
+                            panel.add(new ViewConflictPanel(note, payload));
+                        }
+                    } else {
+                        feedbackLabel.setText("Errore nel recupero della nota: " + response.getStatusText());
+                    }
+                }
+
+                @Override
+                public void onError(Request request, Throwable exception) {
+                    feedbackLabel.setText("Errore durante la richiesta: " + exception.getMessage());
+                }
+            });
+        } catch (RequestException e) {
+            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+        }
+    }
+
+
+    private HorizontalPanel createButtonPanel() {
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.setSpacing(10);
         buttonPanel.add(deleteButton);
@@ -131,22 +218,56 @@ public class NoteDetailPanel extends Composite {
         buttonPanel.add(viewHistory);
         buttonPanel.add(hideButton);
         buttonPanel.add(backButton);
-        panel.add(buttonPanel);
-        panel.add(feedbackLabel);
+        return buttonPanel;
     }
 
-    private void setupHandlers() {
+    private void setupNavigationHandlers() {
         backButton.addClickHandler(event -> {
             panel.clear();
             panel.add(new ViewNotesPanel());
         });
+        viewHistory.addClickHandler(event -> {
+            panel.clear();
+            panel.add(new NoteHistoryPanel(note));
+        });
+        hideButton.addClickHandler(event -> {
+            if (note.isOwner(email)) {
+                Window.alert("Il proprietario della nota non può rimuoversi dalla visualizzazione della nota.");
+                return;
+            }
+            String hideUrl = GWT.getHostPageBaseURL() + "api/notes/hide?id=" + note.getId();
+            RequestBuilder hideBuilder = new RequestBuilder(RequestBuilder.PUT, hideUrl);
+            hideBuilder.setHeader("Content-Type", "text/plain");
+            hideBuilder.setIncludeCredentials(true);
+            try {
+                hideBuilder.sendRequest("true", new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        if (response.getStatusCode() == Response.SC_OK) {
+                            feedbackLabel.setText("Nota rimossa dalla tua vista.");
+                            panel.clear();
+                            panel.add(new ViewNotesPanel());
+                        } else {
+                            feedbackLabel.setText("Errore: " + response.getStatusText());
+                        }
+                    }
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        feedbackLabel.setText("Errore: " + exception.getMessage());
+                    }
+                });
+            } catch (RequestException e) {
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+            }
+        });
+    }
 
+    private void setupTagHandlers() {
         addTagButton.addClickHandler(event -> {
             String newTag = newTagBox.getText().trim();
             if (!newTag.isEmpty()) {
                 JSONObject payload = new JSONObject();
                 payload.put("name", new JSONString(newTag));
-
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
                         GWT.getHostPageBaseURL() + "api/tags");
                 builder.setHeader("Content-Type", "application/json");
@@ -165,7 +286,6 @@ public class NoteDetailPanel extends Composite {
                                 feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
                             }
                         }
-
                         @Override
                         public void onError(Request request, Throwable exception) {
                             feedbackLabel.setText("Errore: " + exception.getMessage());
@@ -178,12 +298,12 @@ public class NoteDetailPanel extends Composite {
                 Window.alert("Inserisci un nome per il tag.");
             }
         });
+    }
 
+    private void setupNoteActionHandlers() {
         deleteButton.addClickHandler(event -> {
-            if (note.getPermission().canEdit(email, note)) {
-
+            if (note.isOwner(email)) {
                 String noteId = note.getId();
-
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + noteId;
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.DELETE, url);
                 builder.setHeader("Content-Type", "application/json");
@@ -200,7 +320,6 @@ public class NoteDetailPanel extends Composite {
                                 feedbackLabel.setText("Eliminazione fallita: " + response.getText());
                             }
                         }
-
                         @Override
                         public void onError(Request request, Throwable exception) {
                             feedbackLabel.setText("Errore durante l'eliminazione: " + exception.getMessage());
@@ -214,7 +333,57 @@ public class NoteDetailPanel extends Composite {
             }
         });
 
+        duplicateButton.addClickHandler(event -> {
+            JSONObject payload = new JSONObject();
+            JSONArray versionsArray = new JSONArray();
+            for (int i = 0; i < note.getAllVersions().size(); i++) {
+                Version v = note.getAllVersions().get(i);
+                JSONObject vObj = new JSONObject();
+                
+                vObj.put("title", new JSONString(
+                        (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
+                vObj.put("content", new JSONString(v.getContent()));
+                if (v.getUpdatedAt() != null) {
+                    vObj.put("updatedAt", new JSONString(DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").format(v.getUpdatedAt())));
+                }
+                versionsArray.set(i, vObj);
+            }
+            payload.put("versions", versionsArray);
+            JSONArray tagsArray = new JSONArray();
+            String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
+            for (int i = 0; i < noteTags.length; i++) {
+                tagsArray.set(i, new JSONString(noteTags[i]));
+            }
+            payload.put("tags", tagsArray);
+            payload.put("ownerEmail", new JSONString(Session.getInstance().getUserEmail()));
+            String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
+            payload.put("permission", new JSONString(selectedPermission));
+            RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                    GWT.getHostPageBaseURL() + "api/notes");
+            builder.setHeader("Content-Type", "application/json");
+            builder.setIncludeCredentials(true);
+            try {
+                builder.sendRequest(payload.toString(), new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        if (response.getStatusCode() == Response.SC_OK) {
+                            feedbackLabel.setText("Nota duplicata!");
+                        } else {
+                            feedbackLabel.setText("Duplicazione fallita: " + response.getText());
+                        }
+                    }
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
+                    }
+                });
+            } catch (RequestException e) {
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
+            }
+        });
+
         editButton.addClickHandler(event -> {
+            // existing editButton handler content unchanged
             if (!isEditMode) {
                 if (note.getPermission().canEdit(email, note)) {
                     isEditMode = true;
@@ -245,23 +414,17 @@ public class NoteDetailPanel extends Composite {
                     Window.alert("Non hai i permessi necessari per modificare questa nota.");
                 }
             } else {
-
                 String title = titleBox.getText().trim();
                 String content = contentBox.getText().trim();
-
                 if (title.isEmpty() || content.isEmpty()) {
                     Window.alert("Titolo e contenuto sono obbligatori.");
                     return;
                 }
-
-                // payload per la nuova versione
                 JSONObject payload = new JSONObject();
                 payload.put("title", new JSONString(title));
                 payload.put("content", new JSONString(content));
-
                 String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
                 payload.put("permission", new JSONString(selectedPermission));
-
                 JSONArray tagsArray = new JSONArray();
                 int tagIndex = 0;
                 for (int i = 0; i < tagListBox.getItemCount(); i++) {
@@ -273,10 +436,7 @@ public class NoteDetailPanel extends Composite {
                     }
                 }
                 payload.put("tags", tagsArray);
-                DateTimeFormat fmt = DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-                payload.put("lastKnownUpdate", new JSONString(fmt.format(note.getCurrentVersion().getUpdatedAt())));
-
-
+                payload.put("lastKnownVersion", new JSONString(String.valueOf(note.currentVersionNumber())));
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + note.getId();
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.PUT, url);
                 builder.setHeader("Content-Type", "application/json");
@@ -287,13 +447,11 @@ public class NoteDetailPanel extends Composite {
                         public void onResponseReceived(Request request, Response response) {
                             if (response.getStatusCode() == Response.SC_OK) {
                                 feedbackLabel.setText("Nota modificata con successo!");
-
                                 Version newVersion = new ConcreteVersion();
                                 newVersion.setTitle(title);
                                 newVersion.setContent(content);
                                 newVersion.setUpdatedAt(new Date());
                                 note.newVersion(newVersion);
-
                                 List<String> selectedTags = new ArrayList<>();
                                 for (int i = 0; i < tagListBox.getItemCount(); i++) {
                                     if (tagListBox.isItemSelected(i)) {
@@ -304,12 +462,10 @@ public class NoteDetailPanel extends Composite {
                                 note.setTags(tagsArray);
                                 String tagsString = tagsArray.length > 0 ? String.join(", ", tagsArray) : "Nessun tag";
                                 tagsLabel.setText("Tag: " + tagsString);
-
                                 titleBox.setText(newVersion.getTitle());
                                 contentBox.setText(newVersion.getContent());
                                 lastModifiedDateLabel
                                         .setText("Ultima modifica: " + newVersion.getUpdatedAt().toString());
-
                                 isEditMode = false;
                                 titleBox.setEnabled(false);
                                 contentBox.setEnabled(false);
@@ -320,14 +476,11 @@ public class NoteDetailPanel extends Composite {
                                 editButton.setText("Modifica");
                             } else if (response.getStatusCode() == Response.SC_CONFLICT) {
                                 feedbackLabel.setText("Conflitto di versione. Quale vuoi mantenere?.");
-
-                                // ottengo l'ultima versione della nota
                                 getNoteById(note.getId(), payload);
                             } else {
                                 feedbackLabel.setText("Errore durante la modifica: " + response.getStatusText());
                             }
                         }
-
                         @Override
                         public void onError(Request request, Throwable exception) {
                             feedbackLabel.setText("Errore: " + exception.getMessage());
@@ -338,279 +491,5 @@ public class NoteDetailPanel extends Composite {
                 }
             }
         });
-
-        duplicateButton.addClickHandler(event -> {
-
-            if (note.getPermission().canEdit(email, note)) {
-                JSONObject payload = new JSONObject();
-
-                // Duplico tutte le versioni
-                JSONArray versionsArray = new JSONArray();
-                for (int i = 0; i < note.getAllVersions().size(); i++) {
-                    Version v = note.getAllVersions().get(i);
-                    JSONObject vObj = new JSONObject();
-                    vObj.put("title", new JSONString(
-                            (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
-                    vObj.put("content", new JSONString(v.getContent()));
-                    if (v.getUpdatedAt() != null) {
-                        vObj.put("updatedAt", new JSONString(dateFormat.format(v.getUpdatedAt())));
-                    }
-                    versionsArray.set(i, vObj);
-                }
-                payload.put("versions", versionsArray);
-                JSONArray tagsArray = new JSONArray();
-                String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
-                for (int i = 0; i < noteTags.length; i++) {
-                    tagsArray.set(i, new JSONString(noteTags[i]));
-                }
-                payload.put("tags", tagsArray);
-                payload.put("ownerEmail", new JSONString(note.getOwnerEmail()));
-
-                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
-                payload.put("permission", new JSONString(selectedPermission));
-
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
-                        GWT.getHostPageBaseURL() + "api/notes");
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(payload.toString(), new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText("Nota duplicata!");
-                            } else {
-                                feedbackLabel.setText("Duplicazione fallita: " + response.getText());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            } else {
-                Window.alert("Non hai i permessi necessari per duplicare questa nota.");
-                return;
-            }
-        });
-
-        viewHistory.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new NoteHistoryPanel(note));
-        });
-
-        hideButton.addClickHandler(event -> {
-            if (note.isOwner(email)) {
-                Window.alert("Il proprietario della nota non può rimuoversi dalla visualizzazione della nota.");
-                return;
-            }
-
-            String hideUrl = GWT.getHostPageBaseURL() + "api/notes/hide?id=" + note.getId();
-            RequestBuilder hideBuilder = new RequestBuilder(RequestBuilder.PUT, hideUrl);
-            hideBuilder.setHeader("Content-Type", "text/plain");
-            hideBuilder.setIncludeCredentials(true);
-            try {
-                hideBuilder.sendRequest("true", new RequestCallback() {
-                    @Override
-                    public void onResponseReceived(Request request, Response response) {
-                        if (response.getStatusCode() == Response.SC_OK) {
-                            feedbackLabel.setText("Nota rimossa dalla tua vista.");
-                            panel.clear();
-                            panel.add(new ViewNotesPanel());
-                        } else {
-                            feedbackLabel.setText("Errore: " + response.getStatusText());
-                        }
-                    }
-
-                    @Override
-                    public void onError(Request request, Throwable exception) {
-                        feedbackLabel.setText("Errore: " + exception.getMessage());
-                    }
-                });
-            } catch (RequestException e) {
-                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-            }
-        });
-    }
-
-    private void getTags() {
-        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET,
-                GWT.getHostPageBaseURL() + "api/tags");
-        builder.setHeader("Content-Type", "application/json");
-        builder.setIncludeCredentials(true);
-        try {
-            builder.setCallback(new RequestCallback() {
-                @Override
-                public void onResponseReceived(Request request, Response response) {
-                    if (response.getStatusCode() == Response.SC_OK) {
-                        String json = response.getText();
-                        List<String> tags = parseTagsJson(json);
-
-                        for (String tag : tags) {
-                            tagListBox.addItem(tag);
-                        }
-                    } else {
-                        feedbackLabel.setText("Errore nel caricamento di " + tagLogName + ": " + response.getText());
-                    }
-                }
-
-                @Override
-                public void onError(Request request, Throwable exception) {
-                    feedbackLabel.setText("Errore: " + exception.getMessage());
-                }
-            });
-            builder.send();
-        } catch (RequestException e) {
-            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-        }
-    }
-
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
-
-    private void updateTagList(Boolean exists, String newTag) {
-        if (!exists) {
-            tagListBox.addItem(newTag, newTag);
-            newTagBox.setText("");
-        } else {
-            feedbackLabel.setText("Tag già presente");
-        }
-    }
-
-    public void getNoteById(String noteId, JSONObject payload) {
-        if (noteId == null || noteId.trim().isEmpty()) {
-            feedbackLabel.setText("ID nota non valido.");
-            return;
-        }
-
-        String url = GWT.getHostPageBaseURL() + "api/notes?id=" + URL.encodeQueryString(noteId);
-        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, url);
-        builder.setHeader("Content-Type", "application/json");
-        builder.setIncludeCredentials(true);
-
-        try {
-            builder.sendRequest(null, new RequestCallback() {
-                @Override
-                public void onResponseReceived(Request request, Response response) {
-                    if (response.getStatusCode() == Response.SC_OK) {
-                        String json = response.getText();
-                        Note note = parseSingleNoteJson(json);
-                        if (note == null) {
-                            feedbackLabel.setText("Nota non trovata o malformata.");
-                        } else {
-                            panel.clear();
-                            panel.add(new ViewConflictPanel(note, payload));
-                        }
-                    } else {
-                        feedbackLabel.setText("Errore nel recupero della nota: " + response.getStatusText());
-                    }
-                }
-
-                @Override
-                public void onError(Request request, Throwable exception) {
-                    feedbackLabel.setText("Errore durante la richiesta: " + exception.getMessage());
-                }
-            });
-        } catch (RequestException e) {
-            feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-        }
-    }
-
-    private Note parseSingleNoteJson(String json) {
-        JSONValue value = JSONParser.parseStrict(json);
-        JSONObject obj = value.isObject();
-
-        if (obj == null) {
-            feedbackLabel.setText("Errore: risposta JSON non valida");
-            return null;
-        }
-
-        DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
-
-        Note note = new ConcreteNote();
-        // ID
-        if (obj.containsKey("id") && obj.get("id").isString() != null) {
-            note.setId(obj.get("id").isString().stringValue());
-        }
-        // OwnerEmail
-        if (obj.containsKey("ownerEmail") && obj.get("ownerEmail").isString() != null) {
-            note.setOwnerEmail(obj.get("ownerEmail").isString().stringValue());
-        }
-        // CreatedDate
-        if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
-            try {
-                String dateStr = obj.get("createdAt").isString().stringValue();
-                dateStr = dateStr.replace("\u202f", " ");
-                note.setCreatedAt(dateFormat.parse(dateStr));
-            } catch (IllegalArgumentException e) {
-                GWT.log("Errore parsing createdAt: " + e.getMessage());
-            }
-        }
-        // Tags
-        if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
-            JSONArray tagsArray = obj.get("tags").isArray();
-            String[] tags = new String[tagsArray.size()];
-            for (int t = 0; t < tagsArray.size(); t++) {
-                if (tagsArray.get(t).isString() != null) {
-                    tags[t] = tagsArray.get(t).isString().stringValue();
-                } else {
-                    tags[t] = "";
-                }
-            }
-            note.setTags(tags);
-        }
-        // Permission
-        if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
-            note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
-        }
-        // Versions
-        if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
-            JSONArray versionsArray = obj.get("versions").isArray();
-            for (int v = 0; v < versionsArray.size(); v++) {
-                JSONObject versionObj = versionsArray.get(v).isObject();
-                if (versionObj != null) {
-                    Version version = new ConcreteVersion();
-                    // Title
-                    if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
-                        version.setTitle(versionObj.get("title").isString().stringValue());
-                    }
-                    // Content
-                    if (versionObj.containsKey("content") && versionObj.get("content").isString() != null) {
-                        version.setContent(versionObj.get("content").isString().stringValue());
-                    }
-                    // UpdatedAt
-                    if (versionObj.containsKey("updatedAt") && versionObj.get("updatedAt").isString() != null) {
-                        try {
-                            String dateStr = versionObj.get("updatedAt").isString().stringValue();
-                            dateStr = dateStr.replace("\u202f", " ");
-                            version.setUpdatedAt(dateFormat.parse(dateStr));
-                        } catch (IllegalArgumentException e) {
-                            GWT.log("Errore parsing updatedAt: " + e.getMessage());
-                        }
-                    }
-                    note.newVersion(version);
-                    System.out.println(
-                            "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
-                }
-            }
-        }
-        return note;
     }
 }

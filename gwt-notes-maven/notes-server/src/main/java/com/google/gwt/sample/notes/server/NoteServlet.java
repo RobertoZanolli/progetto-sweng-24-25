@@ -9,12 +9,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servlet per gestire le richieste relative alle note.
+ * Implementa le operazioni CRUD tramite HTTP.
+ */
 public class NoteServlet extends HttpServlet {
     private File dbFileNote = null;
     private File dbFileTag = null;
     private final String noteTableName = "notes";
     private final String tagTableName = "tags";
-    private NoteService noteService; // Inject the facade
+    private NoteService noteService; 
 
     public NoteServlet() {
     }
@@ -43,6 +47,9 @@ public class NoteServlet extends HttpServlet {
         this.noteService = new NoteService(noteDB, tagDB);
     }
 
+    /**
+     * Gestisce la creazione di una nuova nota (POST).
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
@@ -51,19 +58,22 @@ public class NoteServlet extends HttpServlet {
             noteJson = req.getReader().lines().collect(Collectors.joining());
         } catch (IOException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid Note data");
+            resp.getWriter().write("Dati della nota non validi");
             return;
         }
         try {
             noteService.createNote(noteJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Note created successfully");
-        } catch (NoteService.NoteServiceException e) {
+            resp.getWriter().write("Nota creata con successo");
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
     }
 
+    /**
+     * Gestisce il recupero di una nota o di tutte le note visibili (GET).
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
@@ -83,12 +93,15 @@ public class NoteServlet extends HttpServlet {
                 resp.getWriter().write(json);
             }
             resp.setStatus(HttpServletResponse.SC_OK);
-        } catch (NoteService.NoteServiceException e) {
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
     }
 
+    /**
+     * Gestisce l'eliminazione di una nota (DELETE).
+     */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
@@ -97,13 +110,16 @@ public class NoteServlet extends HttpServlet {
         try {
             noteService.deleteNote(noteId, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Note with ID " + noteId + " deleted successfully");
-        } catch (NoteService.NoteServiceException e) {
+            resp.getWriter().write("Nota con ID " + noteId + " eliminata con successo");
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
     }
 
+    /**
+     * Gestisce l'aggiornamento di una nota (PUT).
+     */
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String userEmail = getUserEmailFromSession(req);
@@ -113,14 +129,14 @@ public class NoteServlet extends HttpServlet {
             updateJson = req.getReader().lines().collect(Collectors.joining());
         } catch (IOException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid update data");
+            resp.getWriter().write("Dati di aggiornamento non validi");
             return;
         }
         try {
             noteService.updateNote(noteId, updateJson, userEmail);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Note updated with new version");
-        } catch (NoteService.NoteServiceException e) {
+            resp.getWriter().write("Nota aggiornata con nuova versione");
+        } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }

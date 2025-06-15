@@ -1,5 +1,9 @@
 package com.google.gwt.sample.notes.shared;
 
+/**
+ * Implementazione concreta dell'interfaccia Tag.
+ * Questa classe rappresenta un singolo tag con il suo nome.
+ */
 public class ConcreteTag implements Tag {
     private String name;
 

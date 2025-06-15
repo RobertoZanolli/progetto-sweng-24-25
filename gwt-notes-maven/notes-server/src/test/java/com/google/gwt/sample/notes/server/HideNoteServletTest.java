@@ -18,6 +18,10 @@ import java.io.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test per HideNoteServlet.
+ * Verifica la funzionalità di nascondere/mostrare note.
+ */
 public class HideNoteServletTest {
     private HideNoteServlet servlet;
     private File tempDbFileNote;
@@ -46,9 +50,7 @@ public class HideNoteServletTest {
         NoteDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists())
             tempDbFileNote.delete();
-        /*
-         * mockSession.invalidate();
-         */ }
+    }
 
     // Stub per simulare HttpServletRequest con body e parametro "id"
     private static class StubHttpServletRequest extends HttpServletRequestWrapper {
@@ -141,7 +143,7 @@ public class HideNoteServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPut(req, resp);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Note not found"));
+        assertTrue(resp.getOutput().contains("Nota non trovata"));
     }
 
     @Test
@@ -161,7 +163,7 @@ public class HideNoteServletTest {
         servlet.doPut(req, resp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Owner cannot hide note"));
+        assertTrue(resp.getOutput().contains("Il proprietario non può nascondersi la nota"));
     }
 
     @Test
@@ -181,7 +183,7 @@ public class HideNoteServletTest {
         servlet.doPut(req, resp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Missing 'hide' value"));
+        assertTrue(resp.getOutput().contains("Valore 'hide' mancante"));
     }
 
     @Test
@@ -202,7 +204,7 @@ public class HideNoteServletTest {
         servlet.doPut(req, resp);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid 'hide' value"));
+        assertTrue(resp.getOutput().contains("Valore 'hide' non valido"));
     }
 
     @Test
@@ -223,7 +225,7 @@ public class HideNoteServletTest {
         servlet.doPut(req, resp);
 
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Note hidden for user"));
+        assertTrue(resp.getOutput().contains("Nota nascosta per l'utente"));
 
         Note updated = noteMap.get(note.getId());
         assertTrue(updated.isHiddenForUser("reader@example.com"));

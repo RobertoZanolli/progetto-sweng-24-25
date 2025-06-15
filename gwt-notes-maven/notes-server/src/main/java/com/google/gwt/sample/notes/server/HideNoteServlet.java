@@ -1,17 +1,19 @@
 package com.google.gwt.sample.notes.server;
 
-import com.google.gwt.sample.notes.shared.Note;
-
-import org.mapdb.HTreeMap;
-
 import javax.servlet.http.*;
 import javax.servlet.http.HttpServlet;
 import java.io.*;
 
+import java.io.File;
+
+/**
+ * Servlet per gestire le richieste di nascondere/mostrare note.
+ * Gestisce le richieste PUT per modificare la visibilità delle note.
+ */
 public class HideNoteServlet extends HttpServlet {
     private File dbFileNote = null;
-    private final String noteTableName = "notes";
-    private NoteDB noteDB;
+    private final String noteTableName = "notes";    
+    private HideNoteService hideNoteService;
 
     public HideNoteServlet() {}
 
@@ -26,31 +28,18 @@ public class HideNoteServlet extends HttpServlet {
     @Override
     public void init() {
         this.dbFileNote = dbFileNote != null ? dbFileNote : new File(noteTableName + ".db");
+        this.hideNoteService = new HideNoteService(this.dbFileNote);
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         HttpSession session = req.getSession();
-        String userEmail = session.getAttribute("email") != null ? (String) session.getAttribute("email") : null;
-        this.noteDB = NoteDB.getInstance(this.dbFileNote);
-        HTreeMap<String, Note> noteMap = noteDB.getMap();
+        String userEmail = session.getAttribute("email") != null
+            ? (String) session.getAttribute("email")
+            : null;
 
         String noteId = req.getParameter("id");
-        if (noteId == null || !noteMap.containsKey(noteId)) {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("Note not found");
-            return;
-        }
-        Note note = noteMap.get(noteId);
-
-        // Controllo se l'owner tenta di nascondere la sua nota
-        if (userEmail != null && userEmail.equals(note.getOwnerEmail())) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Owner cannot hide note");
-            return;
-        }
-
-        // Leggi valore 'hide' dal body
+        // Legge il flag 'hide' dal body
         StringBuilder bodyBuilder = new StringBuilder();
         try (BufferedReader reader = req.getReader()) {
             String line;
@@ -61,29 +50,34 @@ public class HideNoteServlet extends HttpServlet {
         String body = bodyBuilder.toString().trim();
         if (body.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Missing 'hide' value in body");
+            resp.getWriter().write("Valore 'hide' mancante");
             return;
         }
-        if (!"true".equals(body) && !"false".equals(body)) {
+        boolean hide;
+        if ("true".equalsIgnoreCase(body)) {
+            hide = true;
+        } else if ("false".equalsIgnoreCase(body)) {
+            hide = false;
+        } else {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid 'hide' value");
+            resp.getWriter().write("Valore 'hide' non valido");
             return;
         }
-        boolean hide = Boolean.parseBoolean(body);
 
-        if (hide) {
-            note.hideForUser(userEmail);
-            noteMap.put(noteId, note);
-            noteDB.commit();
+        try {
+            hideNoteService.hideNote(noteId, userEmail, hide);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Note hidden for user");
+            resp.getWriter().write(hide ? "Nota nascosta per l'utente" : "Nota mostrata per l'utente");
+        } catch (ServiceException e) {
+            resp.setStatus(e.getStatusCode());
+            resp.getWriter().write(e.getMessage());
         }
     }
 
     @Override
     public void destroy() {
-        if (noteDB != null) {
-            noteDB.close();
+        if (hideNoteService != null) {
+            hideNoteService.close();
         }
     }
 }

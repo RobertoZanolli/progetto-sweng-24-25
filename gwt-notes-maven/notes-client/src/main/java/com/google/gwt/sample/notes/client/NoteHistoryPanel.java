@@ -5,6 +5,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -44,8 +45,8 @@ public class NoteHistoryPanel extends Composite {
 
         Button backButton = new Button("Indietro");
         backButton.addClickHandler(event -> {
-            panel.clear();
-            panel.add(new NoteDetailPanel(note));
+            RootPanel.get("mainPanel").clear();
+            RootPanel.get("mainPanel").add(new NoteDetailPanel(note));
         });
         panel.add(backButton);
     }

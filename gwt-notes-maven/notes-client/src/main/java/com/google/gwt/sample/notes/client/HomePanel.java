@@ -1,23 +1,29 @@
 package com.google.gwt.sample.notes.client;
 
 import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.RootPanel;
 
-public class HomePanel extends VerticalPanel {
+/**
+ * Pannello principale dell'applicazione
+ */
+public class HomePanel extends Composite {
+    private final VerticalPanel panel = new VerticalPanel();
     private final Label feedbackLabel = new Label();
-    private final Button loginButton = new Button("Login");
+    private final Button loginButton = new Button("Accedi");
     private final Button registerButton = new Button("Registrati");
 
     public HomePanel() {
+        initWidget(panel);
         buildUI();
         setupHandlers();
     }
 
     private void buildUI() {
-        setSpacing(10);
-        add(new Label("Benvenuto!"));
-        add(loginButton);
-        add(registerButton);
-        add(feedbackLabel);
+        panel.setSpacing(10);
+        panel.add(new Label("Benvenuto!"));
+        panel.add(loginButton);
+        panel.add(registerButton);
+        panel.add(feedbackLabel);
     }
 
     private void setupHandlers() {
