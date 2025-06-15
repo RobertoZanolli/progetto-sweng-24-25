@@ -165,8 +165,10 @@ public class NoteService {
         }
 
         Note noteToDelete = noteDB.getMap().get(noteId);
-        if (!noteToDelete.getOwnerEmail().equals(userEmail) && !noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
-            throw new ServiceException("L'utente " + userEmail + " non ha il permesso di eliminare la nota " + noteId, 403);
+        if (!noteToDelete.getOwnerEmail().equals(userEmail)
+                && !noteToDelete.getPermission().canEdit(userEmail, noteToDelete)) {
+            throw new ServiceException("L'utente " + userEmail
+                    + " non ha il permesso di eliminare la nota " + noteId, 403);
         }
 
         noteDB.getMap().remove(noteId);

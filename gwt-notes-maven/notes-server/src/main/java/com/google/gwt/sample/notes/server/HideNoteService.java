@@ -34,7 +34,7 @@ public class HideNoteService {
             throw new ServiceException("Nota non trovata", 404);
         }
         Note note = noteMap.get(noteId);
-        if (userEmail.equals(note.getOwnerEmail())) {
+        if (note.isOwner(userEmail)) {
             throw new ServiceException("Il proprietario non può nascondersi la nota", 400);
         }
         if (hide) {
