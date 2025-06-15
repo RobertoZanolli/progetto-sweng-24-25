@@ -683,4 +683,29 @@ public class NoteServletTest {
         servlet.doPut(putReq, putResp);
         assertEquals(HttpServletResponse.SC_FORBIDDEN, putResp.getStatus());
     }
+    @Test
+    public void testUpdateNoteWithVersionConflict() throws Exception {
+        Note note = createValidNote("conflictTestId");
+        String json = NoteFactory.toJson(note);
+
+        String ownerEmail = note.getOwnerEmail();
+
+        HttpSession mockSession = mock(HttpSession.class);
+        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
+
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
+        StubHttpServletResponse postResp = new StubHttpServletResponse();
+        servlet.doPost(postReq, postResp);
+        assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
+
+        String putJsonConflict = "{\"title\":\"Updated Title v1\",\"content\":\"Updated Content v1\",\"updatedAt\":\"2025-05-22T10:06:02Z\",\"tags\":[\"testTag\"],\"lastKnownVersion\":0}";
+
+        // Creo richiesta PUT con id nota esistente ma con versione errata
+        StubHttpServletRequest putReq = new StubHttpServletRequest(putJsonConflict, "PUT", note.getId(), null, mockSession);
+        StubHttpServletResponse putResp = new StubHttpServletResponse();
+        servlet.doPut(putReq, putResp);
+
+        assertEquals(HttpServletResponse.SC_CONFLICT, putResp.getStatus());
+        assertTrue(putResp.getOutput().contains("Note modified by another user"));
+    }
 }
