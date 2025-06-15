@@ -10,6 +10,10 @@ import com.google.gwt.sample.notes.shared.Version;
 
 import java.util.Date;
 
+/**
+ * Factory per la creazione e gestione delle note.
+ * Implementa il pattern Singleton e gestisce la serializzazione JSON.
+ */
 public class NoteFactory {
 
     private static final GsonJsonParser parser = new GsonJsonParser();
@@ -17,6 +21,9 @@ public class NoteFactory {
 
     private NoteFactory(){}
 
+    /**
+     * Restituisce l'istanza singleton della factory.
+     */
     public static synchronized NoteFactory getInstance(){
         if (instance == null){
             instance = new NoteFactory();
@@ -25,7 +32,10 @@ public class NoteFactory {
 
     }
 
-    // Factory method standard
+    /**
+     * Crea una nuova nota con parametri specificati.
+     * Genera automaticamente un ID univoco e imposta la data di creazione.
+     */
     public static synchronized Note create(String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new ConcreteNote();
 
@@ -43,7 +53,10 @@ public class NoteFactory {
         return note;
     }
 
-    // Factory method con id
+    /**
+     * Crea una nota con ID specificato.
+     * Richiede una versione iniziale per evitare NullPointerException.
+     */
     public static synchronized Note create(String id, String title, String content, String[] tags, String ownerEmail, Permission permission) {
         Note note = new ConcreteNote();
         note.setId(id);
@@ -53,18 +66,19 @@ public class NoteFactory {
         note.setCreatedAt(now);
         note.setPermission(permission);
 
-        // VERSIONE INIZIALE CI VUOLE SEMPRE O NULL POINTER EXCEPTION
-        // QUANDO INVOCHIAMO NELLA HOME GETCURRENTVERSION()
+
         Version initialVersion = VersionFactory.create(title, content);
         note.newVersion(initialVersion);
         return note;
     }
 
-    // Factory method da JSON
+    /**
+     * Crea una nota a partire da una stringa JSON.
+     * Gestisce la validazione e l'impostazione dei valori di default.
+     */
     public static synchronized Note fromJson(String json) {
         Note note = parser.fromJson(json, ConcreteNote.class);
 
-        // SPOSTARE CONTROLLI QUI (?)
 
         Date now = new Date();
         if (note.getCreatedAt() == null) {
@@ -99,7 +113,9 @@ public class NoteFactory {
         return note;
     }
 
-    // Per serializzazione
+    /**
+     * Converte una nota in formato JSON.
+     */
     public static synchronized String toJson(Note note) {
         return parser.toJson(note);
     }
