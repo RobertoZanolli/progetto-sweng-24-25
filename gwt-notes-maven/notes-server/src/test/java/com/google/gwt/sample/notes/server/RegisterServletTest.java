@@ -17,6 +17,10 @@ import java.io.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test per RegisterServlet.
+ * Verifica la registrazione degli utenti e la gestione degli errori.
+ */
 public class RegisterServletTest {
     private RegisterServlet servlet;
     private File tempDbFile;
@@ -60,7 +64,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains("User registered"));
+        assertTrue(resp.getOutput().contains("Utente registrato con successo"));
         
         // Verify user was actually added to DB
         HTreeMap<String, String> users = UserDB.getInstance(tempDbFile).getMap();
@@ -85,7 +89,7 @@ public class RegisterServletTest {
         servlet.doPost(req2, resp2);
 
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains("User already exists"));
+        assertTrue(resp2.getOutput().contains("Utente già esistente"));
     }
 
     @Test
@@ -100,7 +104,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("invalid email"));
+        assertTrue(resp.getOutput().contains("Email non valida"));
     }
 
     private static class StubHttpServletRequest extends HttpServletRequestWrapper {
@@ -173,7 +177,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains("User registered"));
+        assertTrue(resp.getOutput().contains("Utente registrato con successo"));
     }
 
     @Test
@@ -187,13 +191,13 @@ public class RegisterServletTest {
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
-        assertTrue(resp1.getOutput().contains("User registered"));
+        assertTrue(resp1.getOutput().contains("Utente registrato con successo"));
 
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains("User already exists"));
+        assertTrue(resp2.getOutput().contains("Utente già esistente"));
     }
 
     @Test
@@ -208,7 +212,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("invalid email"));
+        assertTrue(resp.getOutput().contains("Email non valida"));
     }
 
     @Test
@@ -223,7 +227,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("email required"));
+        assertTrue(resp.getOutput().contains("Email richiesta"));
     }
 
     @Test
@@ -238,7 +242,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("email required"));
+        assertTrue(resp.getOutput().contains("Email richiesta"));
     }
 
     @Test
@@ -253,7 +257,7 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("password required"));
+        assertTrue(resp.getOutput().contains("Password richiesta"));
     }
 
     @Test
@@ -268,6 +272,6 @@ public class RegisterServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("password required"));
+        assertTrue(resp.getOutput().contains("Password richiesta"));
     }
 }

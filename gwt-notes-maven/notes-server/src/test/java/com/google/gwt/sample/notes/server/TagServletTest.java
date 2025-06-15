@@ -13,10 +13,13 @@ import java.io.*;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
+/**
+ * Test per TagServlet.
+ * Verifica le operazioni CRUD sui tag.
+ */
 public class TagServletTest {
     private TagServlet servlet;
     private final String tableName = "tagsTest";
-    private final String logName = "Tag";
     private File tempFile;
 
     @Before
@@ -89,35 +92,35 @@ public class TagServletTest {
         StubHttpServletResponse resp = new StubHttpServletResponse();
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains(logName + " created"));
+        assertTrue(resp.getOutput().contains("Tag creato con successo"));
     }
 
     @Test
     public void testCreateDuplicateTag() throws Exception {
         Tag tag = createValidTag("dupTag");
         String json = TagFactory.toJson(tag);
-        // First creation should succeed
+        // Prima creazione dovrebbe avere successo
         StubHttpServletRequest req1 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp1 = new StubHttpServletResponse();
         servlet.doPost(req1, resp1);
         assertEquals(HttpServletResponse.SC_OK, resp1.getStatus());
-        assertTrue(resp1.getOutput().contains(logName + " created"));
-        // Second creation (duplicate) should fail with conflict
+        assertTrue(resp1.getOutput().contains("Tag creato con successo"));
+        // Seconda creazione (duplicata) dovrebbe fallire
         StubHttpServletRequest req2 = new StubHttpServletRequest(json);
         StubHttpServletResponse resp2 = new StubHttpServletResponse();
         servlet.doPost(req2, resp2);
         assertEquals(HttpServletResponse.SC_CONFLICT, resp2.getStatus());
-        assertTrue(resp2.getOutput().contains(logName + " already exists"));
+        assertTrue(resp2.getOutput().contains("Tag già esistente"));
     }
 
     @Test
     public void testCreateTagWithInvalidJson() throws Exception {
         StubHttpServletRequest req = mock(StubHttpServletRequest.class);
         StubHttpServletResponse resp = new StubHttpServletResponse();
-        when(req.getReader()).thenThrow(new IOException("Simulated IO error"));
+        when(req.getReader()).thenThrow(new IOException("Errore IO simulato"));
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid " + logName + " data"));
+        assertTrue(resp.getOutput().contains("Dati del tag non validi"));
     }
 
     @Test
@@ -130,7 +133,7 @@ public class TagServletTest {
             StubHttpServletResponse resp = new StubHttpServletResponse();
             servlet.doPost(req, resp);
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
-            assertTrue(resp.getOutput().contains("Name required"));
+            assertTrue(resp.getOutput().contains("Nome del tag richiesto"));
         }
     }
 

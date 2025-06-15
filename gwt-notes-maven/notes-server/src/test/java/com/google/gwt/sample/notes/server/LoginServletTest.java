@@ -19,6 +19,10 @@ import java.io.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test per LoginServlet.
+ * Verifica l'autenticazione degli utenti e la gestione degli errori.
+ */
 public class LoginServletTest {
     private LoginServlet servlet;
     private File tempDbFile;
@@ -68,7 +72,7 @@ public class LoginServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Login successful"));
+        assertTrue(resp.getOutput().contains("Login effettuato con successo"));
     }
 
     @Test
@@ -83,7 +87,7 @@ public class LoginServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid credentials"));
+        assertTrue(resp.getOutput().contains("Credenziali non valide"));
     }
 
     @Test
@@ -98,7 +102,7 @@ public class LoginServletTest {
 
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, resp.getStatus());
-        assertTrue(resp.getOutput().contains("Invalid credentials"));
+        assertTrue(resp.getOutput().contains("Credenziali non valide"));
     }
     
     // Inner classes for request/response stubs

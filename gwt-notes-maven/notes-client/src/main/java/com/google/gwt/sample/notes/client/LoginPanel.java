@@ -6,6 +6,9 @@ import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
 
+/**
+ * Pannello per il login degli utenti
+ */
 public class LoginPanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final TextBox emailBox = new TextBox();
@@ -67,12 +70,12 @@ public class LoginPanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     loginButton.setEnabled(true);
                     if (response.getStatusCode() == Response.SC_OK) {
-                        feedbackLabel.setText("Login successful!");
-                        Session.getInstance().setUserEmail(email); // salva la mail
+                        feedbackLabel.setText("Accesso effettuato!");
+                        Session.getInstance().setUserEmail(email);
                         RootPanel.get("mainPanel").clear();
                         RootPanel.get("mainPanel").add(new ViewNotesPanel());
                     } else {
-                        feedbackLabel.setText("Login fallito: utente non registrato");
+                        feedbackLabel.setText("Accesso fallito: utente non registrato");
                     }
                 }
 

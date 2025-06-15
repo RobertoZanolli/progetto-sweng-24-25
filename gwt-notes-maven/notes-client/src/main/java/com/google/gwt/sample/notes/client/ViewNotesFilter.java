@@ -6,18 +6,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.google.gwt.sample.notes.shared.Note;
 
+/**
+ * Filtra le note in base a vari criteri
+ */
 public class ViewNotesFilter {
+
     /**
-     * Filters the given list of notes based on the provided criteria.
-     *
-     * @param notes             the full list of notes to filter
-     * @param keyword           the keyword for title/content search (case-insensitive)
-     * @param selectedTags      the list of selected tags (case-insensitive)
-     * @param startModDate      the start of the modification date range (inclusive), or null
-     * @param endModDate        the end of the modification date range (inclusive), or null
-     * @param startCreatedDate  the start of the creation date range (inclusive), or null
-     * @param endCreatedDate    the end of the creation date range (inclusive), or null
-     * @return                  a new list containing notes that match all criteria
+     * Filtra la lista di note in base ai criteri specificati
+     * @param notes
+     * @param keyword Parola chiave per filtrare titolo e contenuto delle note
+     * @param selectedTags Lista di tag selezionati 
+     * @param startModDate Data di inizio per il filtro sulla data di modifica
+     * @param endModDate Data di fine per il filtro sulla data di modifica
+     * @param startCreatedDate Data di inizio per il filtro sulla data di creazione
+     * @param endCreatedDate Data di fine per il filtro sulla data di creazione
+     * @return Lista filtrata di note che soddisfano tutti i criteri specificati
      */
     public static List<Note> filter(List<Note> notes,
                                     String keyword,
@@ -33,7 +36,7 @@ public class ViewNotesFilter {
 
         return notes.stream()
             .filter(n -> {
-                // Filtro per keyword
+                // Filtro per parola chiave
                 String title = n.getCurrentVersion().getTitle() != null
                         ? n.getCurrentVersion().getTitle().toLowerCase()
                         : "";

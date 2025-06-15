@@ -5,6 +5,10 @@ import com.password4j.Password;
 import org.mapdb.HTreeMap;
 import java.io.File;
 
+/**
+ * Servizio per la registrazione degli utenti.
+ * Gestisce la validazione e il salvataggio dei nuovi account.
+ */
 public class RegisterService {
     private final UserDB userDB;
 
@@ -15,19 +19,19 @@ public class RegisterService {
     public void register(User user) throws ServiceException {
         HTreeMap<String, String> users = userDB.getMap();
         if (users == null) {
-            throw new ServiceException("User database not initialized", 500);
+            throw new ServiceException("Database utenti non inizializzato", 500);
         }
         if (user == null || user.getEmail() == null || user.getEmail().isEmpty()) {
-            throw new ServiceException("email required", 400);
+            throw new ServiceException("Email richiesta", 400);
         }
         if (!user.getEmail().contains("@")) {
-            throw new ServiceException("invalid email", 400);
+            throw new ServiceException("Email non valida", 400);
         }
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            throw new ServiceException("password required", 400);
+            throw new ServiceException("Password richiesta", 400);
         }
         if (users.containsKey(user.getEmail())) {
-            throw new ServiceException("User already exists", 409);
+            throw new ServiceException("Utente già esistente", 409);
         }
         String hash = Password.hash(user.getPassword()).withBcrypt().getResult();
         users.put(user.getEmail(), hash);

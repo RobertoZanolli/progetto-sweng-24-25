@@ -6,9 +6,14 @@ import java.io.*;
 
 import java.io.File;
 
+/**
+ * Servlet per gestire le richieste di nascondere/mostrare note.
+ * Gestisce le richieste PUT per modificare la visibilità delle note.
+ */
 public class HideNoteServlet extends HttpServlet {
     private File dbFileNote = null;
-    private final String noteTableName = "notes";    private HideNoteService hideNoteService;
+    private final String noteTableName = "notes";    
+    private HideNoteService hideNoteService;
 
     public HideNoteServlet() {}
 
@@ -34,7 +39,7 @@ public class HideNoteServlet extends HttpServlet {
             : null;
 
         String noteId = req.getParameter("id");
-        // Read 'hide' flag from body
+        // Legge il flag 'hide' dal body
         StringBuilder bodyBuilder = new StringBuilder();
         try (BufferedReader reader = req.getReader()) {
             String line;
@@ -45,7 +50,7 @@ public class HideNoteServlet extends HttpServlet {
         String body = bodyBuilder.toString().trim();
         if (body.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Missing 'hide' value");
+            resp.getWriter().write("Valore 'hide' mancante");
             return;
         }
         boolean hide;
@@ -55,14 +60,14 @@ public class HideNoteServlet extends HttpServlet {
             hide = false;
         } else {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid 'hide' value");
+            resp.getWriter().write("Valore 'hide' non valido");
             return;
         }
 
         try {
             hideNoteService.hideNote(noteId, userEmail, hide);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write(hide ? "Note hidden for user" : "Note unhidden for user");
+            resp.getWriter().write(hide ? "Nota nascosta per l'utente" : "Nota mostrata per l'utente");
         } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());

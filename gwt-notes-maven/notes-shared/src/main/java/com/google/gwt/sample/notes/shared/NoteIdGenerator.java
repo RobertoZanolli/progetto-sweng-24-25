@@ -1,7 +1,11 @@
 package com.google.gwt.sample.notes.shared;
 
+/**
+ * Implementazione di IdGenerator che genera ID univoci per le note.
+ * Utilizza un algoritmo basato su timestamp e ID macchina per garantire l'unicità.
+ */
 public class NoteIdGenerator implements IdGenerator {
-    private static final long EPOCH = 1700000000000L; // Custom start timestamp
+    private static final long EPOCH = 1700000000000L; // Timestamp di partenza 
     private static final int MACHINE_ID_BITS = 10;
     private static final int SEQUENCE_BITS = 12;
 
@@ -12,9 +16,14 @@ public class NoteIdGenerator implements IdGenerator {
     private long lastTimestamp = -1L;
     private long sequence = 0L;
 
+    /**
+     * Costruttore che inizializza il generatore con un ID macchina specifico
+     * @param machineId ID univoco della macchina (deve essere minore di MAX_MACHINE_ID)
+     * @throws IllegalArgumentException se l'ID macchina non è valido
+     */
     public NoteIdGenerator(long machineId) {
         if (machineId > MAX_MACHINE_ID) {
-            throw new IllegalArgumentException("Invalid machineId");
+            throw new IllegalArgumentException("ID macchina non valido");
         }
         this.machineId = machineId;
     }
@@ -24,7 +33,7 @@ public class NoteIdGenerator implements IdGenerator {
         long timestamp = timeGen();
 
         if (timestamp < lastTimestamp) {
-            throw new RuntimeException("Clock moved backwards");
+            throw new RuntimeException("Orologio del sistema regredito");
         }
 
         if (timestamp == lastTimestamp) {
@@ -43,6 +52,9 @@ public class NoteIdGenerator implements IdGenerator {
                 sequence;
     }
 
+    /**
+     * Attende il prossimo millisecondo disponibile
+     */
     private long waitNextMillis(long lastTimestamp) {
         long timestamp = timeGen();
         while (timestamp <= lastTimestamp) {
@@ -51,6 +63,9 @@ public class NoteIdGenerator implements IdGenerator {
         return timestamp;
     }
 
+    /**
+     * Ottiene il timestamp corrente in millisecondi
+     */
     private long timeGen() {
         return System.currentTimeMillis();
     }

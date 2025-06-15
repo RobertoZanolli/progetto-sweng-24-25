@@ -5,6 +5,10 @@ import com.password4j.Password;
 import org.mapdb.HTreeMap;
 import java.io.File;
 
+/**
+ * Servizio per l'autenticazione degli utenti.
+ * Verifica le credenziali e gestisce l'accesso al sistema.
+ */
 public class LoginService {
     private final UserDB userDB;
 
@@ -13,20 +17,20 @@ public class LoginService {
     }
 
     /**
-     * Authenticates a user. Throws ServiceException if credentials are invalid.
+     * Autentica un utente. Lancia ServiceException se le credenziali non sono valide.
      */
     public void authenticate(User user) throws ServiceException {
         HTreeMap<String, String> users = userDB.getMap();
         if (users == null) {
-            throw new ServiceException("User database not initialized", 500);
+            throw new ServiceException("Database utenti non inizializzato", 500);
         }
         if (user == null || user.getEmail() == null || user.getPassword() == null
                 || user.getEmail().isEmpty() || user.getPassword().isEmpty()) {
-            throw new ServiceException("Email and password required", 400);
+            throw new ServiceException("Email e password richieste", 400);
         }
         String hash = users.get(user.getEmail());
         if (hash == null || !Password.check(user.getPassword(), hash).withBcrypt()) {
-            throw new ServiceException("Invalid credentials", 401);
+            throw new ServiceException("Credenziali non valide", 401);
         }
     }
 

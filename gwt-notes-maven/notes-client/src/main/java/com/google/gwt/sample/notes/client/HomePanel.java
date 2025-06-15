@@ -3,10 +3,13 @@ package com.google.gwt.sample.notes.client;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.user.client.ui.RootPanel;
 
+/**
+ * Pannello principale dell'applicazione
+ */
 public class HomePanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final Label feedbackLabel = new Label();
-    private final Button loginButton = new Button("Login");
+    private final Button loginButton = new Button("Accedi");
     private final Button registerButton = new Button("Registrati");
 
     public HomePanel() {

@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
 
+/**
+ * Implementazione concreta dell'interfaccia Note.
+ * Questa classe gestisce tutte le operazioni relative a una nota, inclusi i permessi,
+ * le versioni e la visibilità per gli utenti.
+ */
 public class ConcreteNote implements Note {
     private String id;
     private Date createdAt;
@@ -24,7 +29,7 @@ public class ConcreteNote implements Note {
         this.id = id;
     }
 
-    // Getters e Setters (obbligatori per Gson + POJO style)
+    // Getters e Setters (obbligatori per Gson)
     @Override
     public String getId() { 
         return this.id; 

@@ -12,12 +12,12 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Utility class for parsing JSON data.
+ * Utility per il parsing dei dati JSON
  */
 public class JsonParserUtil {
     /**
-     * Converte un JSON array di stringhe in una List<String>.
-     * @param jsonText testo JSON, ad es. '["tag1","tag2",...]'
+     * Converte un array JSON di stringhe in una List<String>
+     * @param jsonText 
      */
     public static List<String> parseTagsJson(String jsonText) {
         JSONValue parsed = JSONParser.parseStrict(jsonText);
@@ -35,8 +35,8 @@ public class JsonParserUtil {
     }
 
     /**
-     * Converte un oggetto Note in JSON (con versions e tags) nel corrispondente oggetto Note.
-     * Associa tutte le versioni e i tag come facevi nei panel.
+     * Converte un oggetto Note in JSON nel corrispondente oggetto Note
+     
      * @param jsonText testo JSON con chiavi "id","ownerEmail","permission","versions","tags"
      */
     public static Note parseNoteJson(String jsonText) {
@@ -105,7 +105,9 @@ public class JsonParserUtil {
         return note;
     }
 
-    // parse di una lista di note
+    /**
+     * Converte una lista di note da JSON
+     */
     public static List<Note> parseNotesJson(String jsonText) {
         JSONValue parsed = JSONParser.parseStrict(jsonText);
         JSONArray array = parsed.isArray();
@@ -120,8 +122,7 @@ public class JsonParserUtil {
     }
 
     /**
-     * Converte un JSON testo di singola nota nel corrispondente oggetto Note,
-     * incluso createdAt, tags, permission e versions.
+     * Converte una singola nota da JSON
      */
     public static Note parseSingleNoteJson(String jsonText) {
         JSONValue value = JSONParser.parseStrict(jsonText);

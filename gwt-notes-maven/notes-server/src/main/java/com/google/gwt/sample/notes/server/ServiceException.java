@@ -1,5 +1,8 @@
 package com.google.gwt.sample.notes.server;
 
+/**
+ * Eccezione personalizzata per gestire gli errori dei services.
+ */
 public class ServiceException extends Exception {
     private final int statusCode;
 

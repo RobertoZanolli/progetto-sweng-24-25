@@ -8,14 +8,16 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.util.Set;
 
+/**
+ * Servlet per gestire le richieste relative ai tag.
+ * Implementa le operazioni di creazione e recupero dei tag.
+ */
 public class TagServlet extends HttpServlet {
     private File dbFile = null;
     private final String tagTableName = "tags";
-    private final String tagLogName = "Tag";
     private TagService tagService;
 
     public TagServlet() {
-        // Default constructor for servlet container
     }
 
     public TagServlet(File dbFile) {
@@ -32,6 +34,10 @@ public class TagServlet extends HttpServlet {
         this.tagService = new TagService(this.dbFile);
     }
 
+    /**
+     * Gestisce la creazione di un nuovo tag (POST).
+     * Accetta i dati del tag in formato JSON.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Tag tag = null;
@@ -40,24 +46,28 @@ public class TagServlet extends HttpServlet {
             tag = TagFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid " + tagLogName + " data: " + e.getMessage());
+            resp.getWriter().write("Dati del tag non validi: " + e.getMessage());
             return;
         }
         if (tag == null || tag.getName() == null || tag.getName().isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Name required");
+            resp.getWriter().write("Nome del tag richiesto");
             return;
         }
         try {
             tagService.createTag(tag);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write(tagLogName + " created");
+            resp.getWriter().write("Tag creato con successo.");
         } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
         }
     }
 
+    /**
+     * Gestisce il recupero di tutti i tag (GET).
+     * Restituisce la lista dei tag in formato JSON.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Set<String> tags;
