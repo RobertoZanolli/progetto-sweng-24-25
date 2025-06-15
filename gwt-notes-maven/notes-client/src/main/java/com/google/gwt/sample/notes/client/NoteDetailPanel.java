@@ -334,55 +334,51 @@ public class NoteDetailPanel extends Composite {
         });
 
         duplicateButton.addClickHandler(event -> {
-            if (note.getPermission().canEdit(email, note)) {
-                JSONObject payload = new JSONObject();
-                JSONArray versionsArray = new JSONArray();
-                for (int i = 0; i < note.getAllVersions().size(); i++) {
-                    Version v = note.getAllVersions().get(i);
-                    JSONObject vObj = new JSONObject();
-                    
-                    vObj.put("title", new JSONString(
-                            (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
-                    vObj.put("content", new JSONString(v.getContent()));
-                    if (v.getUpdatedAt() != null) {
-                        vObj.put("updatedAt", new JSONString(DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").format(v.getUpdatedAt())));
+            JSONObject payload = new JSONObject();
+            JSONArray versionsArray = new JSONArray();
+            for (int i = 0; i < note.getAllVersions().size(); i++) {
+                Version v = note.getAllVersions().get(i);
+                JSONObject vObj = new JSONObject();
+                
+                vObj.put("title", new JSONString(
+                        (i == note.getAllVersions().size() - 1) ? v.getTitle() + " (copia)" : v.getTitle()));
+                vObj.put("content", new JSONString(v.getContent()));
+                if (v.getUpdatedAt() != null) {
+                    vObj.put("updatedAt", new JSONString(DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").format(v.getUpdatedAt())));
+                }
+                versionsArray.set(i, vObj);
+            }
+            payload.put("versions", versionsArray);
+            JSONArray tagsArray = new JSONArray();
+            String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
+            for (int i = 0; i < noteTags.length; i++) {
+                tagsArray.set(i, new JSONString(noteTags[i]));
+            }
+            payload.put("tags", tagsArray);
+            payload.put("ownerEmail", new JSONString(Session.getInstance().getUserEmail()));
+            String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
+            payload.put("permission", new JSONString(selectedPermission));
+            RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
+                    GWT.getHostPageBaseURL() + "api/notes");
+            builder.setHeader("Content-Type", "application/json");
+            builder.setIncludeCredentials(true);
+            try {
+                builder.sendRequest(payload.toString(), new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        if (response.getStatusCode() == Response.SC_OK) {
+                            feedbackLabel.setText("Nota duplicata!");
+                        } else {
+                            feedbackLabel.setText("Duplicazione fallita: " + response.getText());
+                        }
                     }
-                    versionsArray.set(i, vObj);
-                }
-                payload.put("versions", versionsArray);
-                JSONArray tagsArray = new JSONArray();
-                String[] noteTags = note.getTags() != null ? note.getTags() : new String[0];
-                for (int i = 0; i < noteTags.length; i++) {
-                    tagsArray.set(i, new JSONString(noteTags[i]));
-                }
-                payload.put("tags", tagsArray);
-                payload.put("ownerEmail", new JSONString(Session.getInstance().getUserEmail()));
-                String selectedPermission = permissionListBox.getValue(permissionListBox.getSelectedIndex());
-                payload.put("permission", new JSONString(selectedPermission));
-                RequestBuilder builder = new RequestBuilder(RequestBuilder.POST,
-                        GWT.getHostPageBaseURL() + "api/notes");
-                builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
-                try {
-                    builder.sendRequest(payload.toString(), new RequestCallback() {
-                        @Override
-                        public void onResponseReceived(Request request, Response response) {
-                            if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText("Nota duplicata!");
-                            } else {
-                                feedbackLabel.setText("Duplicazione fallita: " + response.getText());
-                            }
-                        }
-                        @Override
-                        public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
-                        }
-                    });
-                } catch (RequestException e) {
-                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
-                }
-            } else {
-                Window.alert("Non hai i permessi necessari per duplicare questa nota.");
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        feedbackLabel.setText("Errore durante la duplicazione: " + exception.getMessage());
+                    }
+                });
+            } catch (RequestException e) {
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             }
         });
 
