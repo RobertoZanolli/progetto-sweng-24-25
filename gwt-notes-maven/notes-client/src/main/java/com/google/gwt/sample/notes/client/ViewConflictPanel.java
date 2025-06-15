@@ -84,10 +84,6 @@ public class ViewConflictPanel extends Composite {
         originalTextContent.setText(originalNote.getCurrentVersion().getContent());
         updatedTextContent.setText(updatedVersion.get("content").isString().stringValue());
 
-        /*
-         * originalTextContent.setReadOnly(true);
-         * updatedTextContext.setReadOnly(true);
-         */
         originalTextContent.setVisibleLines(15);
         updatedTextContent.setVisibleLines(15);
 

@@ -46,9 +46,7 @@ public class HideNoteServletTest {
         NoteDB.resetInstance();
         if (tempDbFileNote != null && tempDbFileNote.exists())
             tempDbFileNote.delete();
-        /*
-         * mockSession.invalidate();
-         */ }
+    }
 
     // Stub per simulare HttpServletRequest con body e parametro "id"
     private static class StubHttpServletRequest extends HttpServletRequestWrapper {

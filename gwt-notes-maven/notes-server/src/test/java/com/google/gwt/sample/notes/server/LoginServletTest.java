@@ -56,18 +56,6 @@ public class LoginServletTest {
         if (tempDbFile != null && tempDbFile.exists()) tempDbFile.delete();
     }
 
-    /*
-    private void setPrivateField(Object target, String fieldName, Object value) {
-        try {
-            Field field = LoginServlet.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set field " + fieldName, e);
-        }
-    }
-    */
-
     @Test
     public void testSuccessfulLogin() throws Exception {
         User user = new ConcreteUser();
@@ -81,8 +69,7 @@ public class LoginServletTest {
         servlet.doPost(req, resp);
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
         assertTrue(resp.getOutput().contains("Login successful"));
-/*         assertEquals("testuser@test.it", Session.getInstance().getUserEmail());
- */    }
+    }
 
     @Test
     public void testInvalidCredentials() throws Exception {
