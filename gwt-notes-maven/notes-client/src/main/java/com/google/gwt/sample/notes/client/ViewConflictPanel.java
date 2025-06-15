@@ -13,6 +13,7 @@ import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.ConcreteVersion;
 import com.google.gwt.sample.notes.shared.Note;
@@ -109,10 +110,21 @@ public class ViewConflictPanel extends Composite {
         permissionListBoxOriginal.setSelectedIndex(originalNote.getPermission().ordinal());
         permissionListBoxUpdated.setSelectedIndex(originalNote.getPermission().ordinal());
 
-        // verifico se l'utente è il proprietario della nota e nel caso abilito la
-        // modifica dei permessi
+        // verifico se l'utente è il proprietario della nota e nel caso abilito la modifica dei permessi
         if (originalNote.isOwner(Session.getInstance().getUserEmail())) {
-            permissionListBoxUpdated.setSelectedIndex((int) updatedVersion.get("permission").isNumber().doubleValue());
+            JSONValue permVal = updatedVersion.get("permission");
+            if (permVal != null) {
+                JSONString permStr = permVal.isString();
+                if (permStr != null) {
+                    Permission permEnum = Permission.valueOf(permStr.stringValue());
+                    permissionListBoxUpdated.setSelectedIndex(permEnum.ordinal());
+                } else {
+                    JSONNumber permNum = permVal.isNumber();
+                    if (permNum != null) {
+                        permissionListBoxUpdated.setSelectedIndex((int) permNum.doubleValue());
+                    }
+                }
+            }
             permissionListBoxUpdated.setEnabled(true);
             permissionListBoxOriginal.setEnabled(true);
         }
