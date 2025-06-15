@@ -19,7 +19,6 @@ import java.io.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("deprecation")
 public class LoginServletTest {
     private LoginServlet servlet;
     private File tempDbFile;

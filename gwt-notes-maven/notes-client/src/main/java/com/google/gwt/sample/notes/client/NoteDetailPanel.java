@@ -10,9 +10,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.sample.notes.shared.Note;
-import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
-import com.google.gwt.sample.notes.shared.ConcreteNote;
 import com.google.gwt.sample.notes.shared.ConcreteVersion;
 
 import java.util.ArrayList;
@@ -25,11 +23,9 @@ import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.http.client.RequestException;
-import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONParser;
-import com.google.gwt.json.client.JSONString;
-import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
 import java.util.Date;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -143,8 +139,7 @@ public class NoteDetailPanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        List<String> tags = parseTagsJson(json);
-
+                        List<String> tags = JsonParserUtil.parseTagsJson(json);
                         for (String tag : tags) {
                             tagListBox.addItem(tag);
                         }
@@ -164,21 +159,6 @@ public class NoteDetailPanel extends Composite {
         }
     }
 
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
 
     private void updateTagList(Boolean exists, String newTag) {
         if (!exists) {
@@ -206,7 +186,7 @@ public class NoteDetailPanel extends Composite {
                 public void onResponseReceived(Request request, Response response) {
                     if (response.getStatusCode() == Response.SC_OK) {
                         String json = response.getText();
-                        Note note = parseSingleNoteJson(json);
+                        Note note = JsonParserUtil.parseSingleNoteJson(json);
                         if (note == null) {
                             feedbackLabel.setText("Nota non trovata o malformata.");
                         } else {
@@ -228,86 +208,6 @@ public class NoteDetailPanel extends Composite {
         }
     }
 
-    private Note parseSingleNoteJson(String json) {
-        JSONValue value = JSONParser.parseStrict(json);
-        JSONObject obj = value.isObject();
-
-        if (obj == null) {
-            feedbackLabel.setText("Errore: risposta JSON non valida");
-            return null;
-        }
-
-        DateTimeFormat dateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
-
-        Note note = new ConcreteNote();
-        // ID
-        if (obj.containsKey("id") && obj.get("id").isString() != null) {
-            note.setId(obj.get("id").isString().stringValue());
-        }
-        // OwnerEmail
-        if (obj.containsKey("ownerEmail") && obj.get("ownerEmail").isString() != null) {
-            note.setOwnerEmail(obj.get("ownerEmail").isString().stringValue());
-        }
-        // CreatedDate
-        if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
-            try {
-                String dateStr = obj.get("createdAt").isString().stringValue();
-                dateStr = dateStr.replace("\u202f", " ");
-                note.setCreatedAt(dateFormat.parse(dateStr));
-            } catch (IllegalArgumentException e) {
-                GWT.log("Errore parsing createdAt: " + e.getMessage());
-            }
-        }
-        // Tags
-        if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
-            JSONArray tagsArray = obj.get("tags").isArray();
-            String[] tags = new String[tagsArray.size()];
-            for (int t = 0; t < tagsArray.size(); t++) {
-                if (tagsArray.get(t).isString() != null) {
-                    tags[t] = tagsArray.get(t).isString().stringValue();
-                } else {
-                    tags[t] = "";
-                }
-            }
-            note.setTags(tags);
-        }
-        // Permission
-        if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
-            note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
-        }
-        // Versions
-        if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
-            JSONArray versionsArray = obj.get("versions").isArray();
-            for (int v = 0; v < versionsArray.size(); v++) {
-                JSONObject versionObj = versionsArray.get(v).isObject();
-                if (versionObj != null) {
-                    Version version = new ConcreteVersion();
-                    // Title
-                    if (versionObj.containsKey("title") && versionObj.get("title").isString() != null) {
-                        version.setTitle(versionObj.get("title").isString().stringValue());
-                    }
-                    // Content
-                    if (versionObj.containsKey("content") && versionObj.get("content").isString() != null) {
-                        version.setContent(versionObj.get("content").isString().stringValue());
-                    }
-                    // UpdatedAt
-                    if (versionObj.containsKey("updatedAt") && versionObj.get("updatedAt").isString() != null) {
-                        try {
-                            String dateStr = versionObj.get("updatedAt").isString().stringValue();
-                            dateStr = dateStr.replace("\u202f", " ");
-                            version.setUpdatedAt(dateFormat.parse(dateStr));
-                        } catch (IllegalArgumentException e) {
-                            GWT.log("Errore parsing updatedAt: " + e.getMessage());
-                        }
-                    }
-                    note.newVersion(version);
-                    System.out.println(
-                            "Parsed note: id=" + note.getId() + ", versions=" + note.getAllVersions().size());
-                }
-            }
-        }
-        return note;
-    }
 
     private HorizontalPanel createButtonPanel() {
         HorizontalPanel buttonPanel = new HorizontalPanel();

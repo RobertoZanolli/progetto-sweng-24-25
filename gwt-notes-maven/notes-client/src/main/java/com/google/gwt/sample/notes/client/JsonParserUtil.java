@@ -11,13 +11,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-
+/**
+ * Utility class for parsing JSON data.
+ */
 public class JsonParserUtil {
-
-    // usato in tutti i pannelli per formattare e leggere le date
-    private static final DateTimeFormat dateFormat =
-            DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss");
-
     /**
      * Converte un JSON array di stringhe in una List<String>.
      * @param jsonText testo JSON, ad es. '["tag1","tag2",...]'
@@ -61,10 +58,15 @@ public class JsonParserUtil {
                 String title   = vObj.get("title").isString().stringValue();
                 String content = vObj.get("content").isString().stringValue();
 
+                JSONString upd = vObj.get("updatedAt").isString();
                 Date updatedAt = null;
-                JSONString upd = vObj.get("updatedAt") != null ? vObj.get("updatedAt").isString() : null;
                 if (upd != null) {
-                    updatedAt = dateFormat.parse(upd.stringValue());
+                    try {
+                        String dateStr = upd.stringValue().replace("\u202f", " ");
+                        updatedAt = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a").parse(dateStr);
+                    } catch (IllegalArgumentException e) {
+                        // ignore parse errors
+                    }
                 }
 
                 Version v = new ConcreteVersion();
@@ -99,7 +101,7 @@ public class JsonParserUtil {
         return note;
     }
 
-    // Se in futuro ti serve anche parse di una lista di note:
+    // parse di una lista di note
     public static List<Note> parseNotesJson(String jsonText) {
         JSONValue parsed = JSONParser.parseStrict(jsonText);
         JSONArray array = parsed.isArray();
@@ -111,5 +113,76 @@ public class JsonParserUtil {
             }
         }
         return notes;
+    }
+
+    /**
+     * Converte un JSON testo di singola nota nel corrispondente oggetto Note,
+     * incluso createdAt, tags, permission e versions.
+     */
+    public static Note parseSingleNoteJson(String jsonText) {
+        JSONValue value = JSONParser.parseStrict(jsonText);
+        JSONObject obj = value.isObject();
+        if (obj == null) {
+            return null;
+        }
+        DateTimeFormat singleDateFormat = DateTimeFormat.getFormat("MMM d, yyyy, h:mm:ss a");
+        ConcreteNote note = new ConcreteNote();
+        // ID
+        if (obj.containsKey("id") && obj.get("id").isString() != null) {
+            note.setId(obj.get("id").isString().stringValue());
+        }
+        // OwnerEmail
+        if (obj.containsKey("ownerEmail") && obj.get("ownerEmail").isString() != null) {
+            note.setOwnerEmail(obj.get("ownerEmail").isString().stringValue());
+        }
+        // CreatedAt
+        if (obj.containsKey("createdAt") && obj.get("createdAt").isString() != null) {
+            try {
+                String dateStr = obj.get("createdAt").isString().stringValue().replace("\u202f", " ");
+                note.setCreatedAt(singleDateFormat.parse(dateStr));
+            } catch (IllegalArgumentException e) {
+                // ignore parse errors
+            }
+        }
+        // Tags
+        if (obj.containsKey("tags") && obj.get("tags").isArray() != null) {
+            JSONArray tagsArray = obj.get("tags").isArray();
+            String[] tags = new String[tagsArray.size()];
+            for (int i = 0; i < tagsArray.size(); i++) {
+                JSONString s = tagsArray.get(i).isString();
+                tags[i] = s != null ? s.stringValue() : "";
+            }
+            note.setTags(tags);
+        }
+        // Permission
+        if (obj.containsKey("permission") && obj.get("permission").isString() != null) {
+            note.setPermission(Permission.valueOf(obj.get("permission").isString().stringValue()));
+        }
+        // Versions
+        if (obj.containsKey("versions") && obj.get("versions").isArray() != null) {
+            JSONArray verArray = obj.get("versions").isArray();
+            for (int i = 0; i < verArray.size(); i++) {
+                JSONObject vObj = verArray.get(i).isObject();
+                if (vObj != null) {
+                    ConcreteVersion v = new ConcreteVersion();
+                    if (vObj.containsKey("title") && vObj.get("title").isString() != null) {
+                        v.setTitle(vObj.get("title").isString().stringValue());
+                    }
+                    if (vObj.containsKey("content") && vObj.get("content").isString() != null) {
+                        v.setContent(vObj.get("content").isString().stringValue());
+                    }
+                    if (vObj.containsKey("updatedAt") && vObj.get("updatedAt").isString() != null) {
+                        try {
+                            String dateStr = vObj.get("updatedAt").isString().stringValue().replace("\u202f", " ");
+                            v.setUpdatedAt(singleDateFormat.parse(dateStr));
+                        } catch (IllegalArgumentException e) {
+                            // ignore parse errors
+                        }
+                    }
+                    note.newVersion(v);
+                }
+            }
+        }
+        return note;
     }
 }

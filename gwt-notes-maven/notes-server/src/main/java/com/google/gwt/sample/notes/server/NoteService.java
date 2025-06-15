@@ -7,12 +7,7 @@ import com.google.gwt.sample.notes.shared.Note;
 import com.google.gwt.sample.notes.shared.Permission;
 import com.google.gwt.sample.notes.shared.Version;
 
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class NoteService {

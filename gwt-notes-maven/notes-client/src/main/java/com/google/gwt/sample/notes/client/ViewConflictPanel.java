@@ -21,7 +21,6 @@ import com.google.gwt.sample.notes.shared.Version;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
 import com.google.gwt.user.client.ui.RootPanel;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,24 +213,9 @@ public class ViewConflictPanel extends Composite {
         }
     }
 
-    public List<String> parseTagsJson(String jsonString) {
-        List<String> result = new ArrayList<>();
-        JSONValue value = JSONParser.parseStrict(jsonString);
-        JSONArray array = value.isArray();
-        if (array != null) {
-            for (int i = 0; i < array.size(); i++) {
-                JSONValue v = array.get(i);
-                JSONString s = v.isString();
-                if (s != null) {
-                    result.add(s.stringValue());
-                }
-            }
-        }
-        return result;
-    }
 
     private void setUpTagListBoxes(String json) {
-        List<String> tags = parseTagsJson(json);
+        List<String> tags = JsonParserUtil.parseTagsJson(json);
 
         // clear existing items
         tagListBoxOriginal.clear();
@@ -248,23 +232,8 @@ public class ViewConflictPanel extends Composite {
         // Set the original tags for the original note
         setSelectedTags(tagListBoxOriginal, originalNote.getTags());
 
-        JSONArray jsonTags = updatedVersion.get("tags").isArray();
-        String[] updatedTags;
-        if (jsonTags == null) {
-            // If no tags are present in the updated version, initialize it as an empty
-            // array
-            updatedTags = new String[0];
-        } else {
-            updatedTags = new String[jsonTags.size()];
-            for (int i = 0; i < jsonTags.size(); i++) {
-                JSONValue tagValue = jsonTags.get(i);
-                if (tagValue.isString() != null) {
-                    updatedTags[i] = tagValue.isString().stringValue();
-                } else {
-                    updatedTags[i] = null; // Handle non-string values gracefully
-                }
-            }
-        }
+        List<String> updatedTagsList = JsonParserUtil.parseTagsJson(updatedVersion.get("tags").toString());
+        String[] updatedTags = updatedTagsList.toArray(new String[0]);
 
         // Set the updated tags for the updated version
         setSelectedTags(tagListBoxUpdated, updatedTags);
