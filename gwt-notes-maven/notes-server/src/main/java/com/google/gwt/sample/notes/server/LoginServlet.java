@@ -5,6 +5,10 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.io.File;
 
+/**
+ * Servlet per l'autenticazione degli utenti.
+ * Gestisce le richieste di login e la creazione delle sessioni.
+ */
 public class LoginServlet extends HttpServlet {
     private String dbPath = null;
     private LoginService loginService;
@@ -26,12 +30,12 @@ public class LoginServlet extends HttpServlet {
             user = UserFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid user data");
+            resp.getWriter().write("Dati utente non validi");
             return;
         }
         if (user == null || user.getEmail() == null || user.getPassword() == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Email and password required");
+            resp.getWriter().write("Email e password richieste");
             return;
         }
 
@@ -41,7 +45,7 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("email", user.getEmail());
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Login successful");
+            resp.getWriter().write("Login effettuato con successo");
         } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());

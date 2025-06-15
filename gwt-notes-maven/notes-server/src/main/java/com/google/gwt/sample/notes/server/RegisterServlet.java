@@ -6,12 +6,16 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.io.File;
 
+/**
+ * Servlet per la registrazione degli utenti.
+ * Gestisce le richieste di registrazione e la creazione di nuovi account.
+ */
 public class RegisterServlet extends HttpServlet {
     private String dbPath = null;
     private RegisterService registerService;
 
     public RegisterServlet() {
-        // Default constructor for servlet container
+        // Costruttore di default per il container servlet
     }
     public RegisterServlet(String dbPath) {
         this.dbPath = dbPath;
@@ -31,14 +35,14 @@ public class RegisterServlet extends HttpServlet {
             user = UserFactory.fromJson(json);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid user data");
+            resp.getWriter().write("Dati utente non validi");
             return;
         }
 
         try {
             registerService.register(user);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("User registered");
+            resp.getWriter().write("Utente registrato con successo");
         } catch (ServiceException e) {
             resp.setStatus(e.getStatusCode());
             resp.getWriter().write(e.getMessage());
