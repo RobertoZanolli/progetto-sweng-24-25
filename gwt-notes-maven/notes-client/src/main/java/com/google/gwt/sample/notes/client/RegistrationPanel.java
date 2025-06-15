@@ -6,6 +6,9 @@ import com.google.gwt.user.client.ui.*;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
 
+/**
+ * Pannello per la registrazione degli utenti
+ */
 public class RegistrationPanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final TextBox emailBox = new TextBox();
@@ -48,12 +51,12 @@ public class RegistrationPanel extends Composite {
         String password = passwordBox.getText();
 
         if (email.isEmpty() || password.isEmpty()) {
-            feedbackLabel.setText("Email and password required.");
+            feedbackLabel.setText("Email e password obbligatorie.");
         } else if (!email.contains("@")) {
-            feedbackLabel.setText("Email must contain '@' symbol.");
+            feedbackLabel.setText("L'email deve contenere il simbolo '@'.");
         } else {
             registerButton.setEnabled(false);
-            feedbackLabel.setText("Registering...");
+            feedbackLabel.setText("Registrazione in corso...");
 
             JSONObject payload = new JSONObject();
             payload.put("email", new JSONString(email));
@@ -61,31 +64,31 @@ public class RegistrationPanel extends Composite {
 
             RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, GWT.getHostPageBaseURL() + "api/register");
             builder.setHeader("Content-Type", "application/json");
-                builder.setIncludeCredentials(true);
+            builder.setIncludeCredentials(true);
             try {
                 builder.sendRequest(payload.toString(), new RequestCallback() {
                     @Override
                     public void onResponseReceived(Request request, Response response) {
                         registerButton.setEnabled(true);
                         if (response.getStatusCode() == Response.SC_OK) {
-                            feedbackLabel.setText("Registration successful!");
+                            feedbackLabel.setText("Registrazione completata!");
                             RootPanel.get("mainPanel").clear();
                             RootPanel.get("mainPanel").add(new LoginPanel());
                         } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                            feedbackLabel.setText("User already exists.");
+                            feedbackLabel.setText("Utente già esistente.");
                         } else {
-                            feedbackLabel.setText("Registration failed: " + response.getText());
+                            feedbackLabel.setText("Registrazione fallita: " + response.getText());
                         }
                     }
                     @Override
                     public void onError(Request request, Throwable exception) {
                         registerButton.setEnabled(true);
-                        feedbackLabel.setText("Error: " + exception.getMessage());
+                        feedbackLabel.setText("Errore: " + exception.getMessage());
                     }
                 });
             } catch (RequestException e) {
                 registerButton.setEnabled(true);
-                feedbackLabel.setText("Request error: " + e.getMessage());
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             }
         }
     }

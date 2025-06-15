@@ -20,6 +20,9 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import java.util.List;
 
+/**
+ * Pannello per la creazione di una nuova nota
+ */
 public class CreateNotePanel extends Composite {
     private final VerticalPanel panel = new VerticalPanel();
     private final TextBox titleBox = new TextBox();
@@ -35,9 +38,6 @@ public class CreateNotePanel extends Composite {
     private final TextBox newTagBox = new TextBox();
     private final Button addTagButton = new Button("Aggiungi tag");
     private final Button backButton = new Button("Indietro");
-    private final String tagLogName = "Tag";
-    private final String noteLogName = "Note";
-
     public CreateNotePanel() {
         initWidget(panel);
         buildUI();
@@ -100,23 +100,23 @@ public class CreateNotePanel extends Composite {
                         @Override
                         public void onResponseReceived(Request request, Response response) {
                             if (response.getStatusCode() == Response.SC_OK) {
-                                feedbackLabel.setText(tagLogName + " created!");
+                                feedbackLabel.setText("Tag creato!");
                                 updateTagList(false, newTag);
                             } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                                feedbackLabel.setText(tagLogName + " already exists.");
+                                feedbackLabel.setText("Tag già esistente.");
                                 updateTagList(true, newTag);
                             } else {
-                                feedbackLabel.setText(tagLogName + " creation failed: " + response.getText());
+                                feedbackLabel.setText("Creazione tag fallita: " + response.getText());
                             }
                         }
 
                         @Override
                         public void onError(Request request, Throwable exception) {
-                            feedbackLabel.setText("Error: " + exception.getMessage());
+                            feedbackLabel.setText("Errore: " + exception.getMessage());
                         }
                     });
                 } catch (RequestException e) {
-                    feedbackLabel.setText("Request error: " + e.getMessage());
+                    feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
                 }
             } else {
                 Window.alert("Inserisci un nome per il tag.");
@@ -128,7 +128,7 @@ public class CreateNotePanel extends Composite {
             String content = contentBox.getText().trim();
 
             JSONArray tagsArray = new JSONArray();
-            int tagIndex = 0; // usato per tenere traccia dell'indice compatto dell'array
+            int tagIndex = 0; 
 
             for (int i = 0; i < tagListBox.getItemCount(); i++) {
                 if (tagListBox.isItemSelected(i)) {
@@ -169,23 +169,22 @@ public class CreateNotePanel extends Composite {
                     @Override
                     public void onResponseReceived(Request request, Response response) {
                         if (response.getStatusCode() == Response.SC_OK) {
-                            feedbackLabel.setText(noteLogName + " Created!");
+                            feedbackLabel.setText("Nota creata!");
                         } else if (response.getStatusCode() == Response.SC_CONFLICT) {
-                            feedbackLabel.setText(noteLogName + " already exists.");
+                            feedbackLabel.setText("Nota già esistente.");
                         } else {
-                            feedbackLabel.setText(noteLogName + " Creation failed: " + response.getText());
+                            feedbackLabel.setText("Creazione nota fallita: " + response.getText());
                         }
-
                         clearForm();
                     }
 
                     @Override
                     public void onError(Request request, Throwable exception) {
-                        feedbackLabel.setText("Error: " + exception.getMessage());
+                        feedbackLabel.setText("Errore: " + exception.getMessage());
                     }
                 });
             } catch (RequestException e) {
-                feedbackLabel.setText("Request error: " + e.getMessage());
+                feedbackLabel.setText("Errore nella richiesta: " + e.getMessage());
             }
         });
 
@@ -206,7 +205,7 @@ public class CreateNotePanel extends Composite {
 
     private void updateTagList(Boolean exists, String newTag) {
         if (!exists) {
-            tagListBox.addItem(newTag);  // use tag text as value
+            tagListBox.addItem(newTag); 
             newTagBox.setText("");
         } else {
             feedbackLabel.setText("Tag già presente.");
@@ -230,7 +229,7 @@ public class CreateNotePanel extends Composite {
                             tagListBox.addItem(tag);
                         }
                     } else {
-                        feedbackLabel.setText("Error fetching " + tagLogName + ": " + response.getText());
+                        feedbackLabel.setText("Errore durante fetching: " + response.getText());
                     }
                 }
 
