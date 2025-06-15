@@ -321,18 +321,21 @@ public class NoteServletTest {
 
     @Test
     public void testDeleteExistingNoteNotOwner() throws Exception {
+
         Note note = createValidNote("delId");
         String json = NoteFactory.toJson(note);
 
         String ownerEmail = note.getOwnerEmail();
-        HttpSession mockSession = mock(HttpSession.class);
-        when(mockSession.getAttribute("email")).thenReturn(ownerEmail);
+        HttpSession ownerSession = mock(HttpSession.class);
+        when(ownerSession.getAttribute("email")).thenReturn(ownerEmail);
 
-        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, mockSession);
+    
+        StubHttpServletRequest postReq = new StubHttpServletRequest(json, "POST", null, null, ownerSession);
         StubHttpServletResponse postResp = new StubHttpServletResponse();
         servlet.doPost(postReq, postResp);
         assertEquals(HttpServletResponse.SC_OK, postResp.getStatus());
 
+        // prova a cancellare con user diverso
         String nonOwnerEmail = "nottheowner@example.com";
         HttpSession nonOwnerSession = mock(HttpSession.class);
         when(nonOwnerSession.getAttribute("email")).thenReturn(nonOwnerEmail);
@@ -342,7 +345,7 @@ public class NoteServletTest {
         servlet.doDelete(deleteReq, deleteResp);
 
         assertEquals(HttpServletResponse.SC_FORBIDDEN, deleteResp.getStatus());
-        assertTrue(deleteResp.getOutput().contains("Non hai i permessi per eliminare questa nota"));
+        assertTrue(deleteResp.getOutput().contains("non ha il permesso di eliminare la nota"));
     }
 
     @Test
