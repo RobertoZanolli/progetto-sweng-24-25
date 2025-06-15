@@ -235,7 +235,7 @@ public class NoteService {
             }
 
             if (jsonObj.has("permission") && !jsonObj.get("permission").isJsonNull()) {
-                if (!noteToUpdate.isOwner(userEmail)) {
+                if ((noteToUpdate.getPermission().toString().equals(jsonObj.get("permission").toString())) && (!noteToUpdate.isOwner(userEmail))) {
                     throw new ServiceException("Solo il proprietario può modificare i permessi", 403);
                 }
                 String permString = jsonObj.get("permission").getAsString();
