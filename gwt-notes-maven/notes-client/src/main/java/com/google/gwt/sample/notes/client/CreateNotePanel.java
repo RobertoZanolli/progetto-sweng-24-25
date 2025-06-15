@@ -26,7 +26,7 @@ public class CreateNotePanel extends Composite {
     private final TextArea contentBox = new TextArea();
 
     @SuppressWarnings("deprecation")
-    private final ListBox tagListBox = new ListBox(true); // Per selezione multipla
+    private final ListBox tagListBox = new ListBox(true); 
     private final ListBox permissionListBox = new ListBox();
     
     private final Button saveButton = new Button("Salva nota");

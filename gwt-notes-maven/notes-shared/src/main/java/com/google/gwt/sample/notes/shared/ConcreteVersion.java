@@ -3,6 +3,11 @@ package com.google.gwt.sample.notes.shared;
 import java.util.Date;
 import java.io.Serializable;
 
+/**
+ * Implementazione concreta dell'interfaccia Version.
+ * Questa classe rappresenta una singola versione di una nota con il suo titolo,
+ * contenuto e data di aggiornamento.
+ */
 public class ConcreteVersion implements Serializable, Version {
     private String title;
     private String content;

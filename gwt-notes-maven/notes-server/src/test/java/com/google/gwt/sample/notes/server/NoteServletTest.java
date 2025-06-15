@@ -31,9 +31,7 @@ public class NoteServletTest {
     private File tempDbFileNote;
     private File tempDbFileTag;
     private final String noteTableName = "notesTest";
-    private final String noteLogName = "Note";
     private final String tagTableName = "tagsTest";
-    private final String tagLogName = "Tag";
 
     @Before
     public void setUp() throws IOException {
