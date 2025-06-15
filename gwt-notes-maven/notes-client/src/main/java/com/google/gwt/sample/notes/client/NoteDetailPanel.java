@@ -302,7 +302,7 @@ public class NoteDetailPanel extends Composite {
 
     private void setupNoteActionHandlers() {
         deleteButton.addClickHandler(event -> {
-            if (note.getPermission().canEdit(email, note)) {
+            if (note.isOwner(email)) {
                 String noteId = note.getId();
                 String url = GWT.getHostPageBaseURL() + "api/notes?id=" + noteId;
                 RequestBuilder builder = new RequestBuilder(RequestBuilder.DELETE, url);
